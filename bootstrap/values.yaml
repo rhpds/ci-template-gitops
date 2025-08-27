@@ -10,6 +10,8 @@ deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
+# Set to empty to NOT create workspaces
+# workspace: ""
 workspace:
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
