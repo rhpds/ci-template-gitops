@@ -18,6 +18,6 @@ workspace:
 
 webterminal:
   git:
-    repoUrl: https://github.com/rhpds/ocp-cluster-addons.git
+    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
     targetRevision: main
     path: webterminal
