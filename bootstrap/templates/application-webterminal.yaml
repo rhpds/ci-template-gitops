@@ -12,7 +12,9 @@ spec:
     helm:
       values: |
         operator:
+          {{- if .Values.webterminal.startingCSV }}
           startingCSV: {{ .Values.webterminal.startingCSV }}
+          {{- end }}
           installPlanApproval: Automatic
   destination:
     server: https://kubernetes.default.svc
