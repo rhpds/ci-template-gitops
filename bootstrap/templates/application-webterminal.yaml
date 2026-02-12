@@ -18,3 +18,16 @@ spec:
           installPlanApproval: Automatic
   destination:
     server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10         # Max number of retry attempts
+      backoff:
+        duration: 5s    # Initial wait time
+        factor: 2       # Multiply wait time by this factor each fail (5s, 10s, 20s...)
+        maxDuration: 3m # Cap the wait time at 3 minutes
