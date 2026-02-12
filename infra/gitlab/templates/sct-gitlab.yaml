@@ -1,0 +1,16 @@
+apiVersion: v1
+stringData:
+  DB_PASS: {{ $.Values.postgresql.dbPassword }}
+  GITLAB_ROOT_PASSWORD:  {{ $.Values.gitlab.rootPassword }}
+  GITLAB_SECRETS_DB_KEY_BASE: "{{ $.Values.gitlab.keyBase.db }}"
+  GITLAB_SECRETS_OTP_KEY_BASE: "{{ $.Values.gitlab.keyBase.otp }}"
+  GITLAB_SECRETS_SECRET_KEY_BASE: "{{ $.Values.gitlab.keyBase.secret }}"
+  SMTP_PASS: {{ $.Values.gitlab.smtp.password }}
+kind: Secret
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: gitlab
+  name: gitlab-secret
+type: Opaque

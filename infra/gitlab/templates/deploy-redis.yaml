@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    name: gitlab-redis
+  name: gitlab-redis
+spec:
+  selector:
+    matchLabels:
+      name: gitlab-redis
+  template:
+    metadata:
+      labels:
+        name: gitlab-redis
+    spec:
+      containers:
+      - image: redis:6.2.6
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        name: redis
+        ports:
+        - containerPort: 6379
+          name: redis
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/lib/redis
+          name: data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: gitlab-redis
+      serviceAccount: gitlab
+      serviceAccountName: gitlab

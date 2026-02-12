@@ -1,0 +1,29 @@
+{{ if .Values.rhoai.enabled -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rhoai
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoUrl: {{ .Values.rhoai.git.repoURL }}
+    targetRevision: {{ .Values.rhoai.git.targetRevision }}
+    path: {{ .Values.rhoai.git.path }}
+    helm:
+      values: |
+        operator:
+          channel: fast-3.x
+          installPlanApproval: Automatic
+        datasciencecluster:
+          apiVersion: datasciencecluster.opendatahub.io/v2
+        patcher:
+          dashboard:
+            replicas: 1
+          route: true
+        helper-status-checker:
+          approver: true
+  destination:
+    server: https://kubernetes.default.svc
+{{- end }}

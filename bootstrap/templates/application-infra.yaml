@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infra
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.infra.git.repoURL }}
+    targetRevision: {{ .Values.infra.git.targetRevision }}
+    path: {{ .Values.infra.git.path }}
+    helm:
+      values: |
+        deployer:
+        {{- .Values.deployer | toYaml | nindent 10 }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true

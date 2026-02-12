@@ -1,0 +1,15 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  name: admin
+  namespace: {{ $.Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: gitlab
+    namespace: {{ $.Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin

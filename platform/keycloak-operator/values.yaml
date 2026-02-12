@@ -1,0 +1,10 @@
+operator:
+  channel: stable-v26.0
+  installPlanApproval: Automatic
+
+database:
+  namespace: keycloak
+  name: keycloak
+  host: keycloak-pgsql
+  port: 5432
+  username: keycloak

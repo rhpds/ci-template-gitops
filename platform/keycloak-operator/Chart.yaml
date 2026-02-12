@@ -1,0 +1,6 @@
+apiVersion: v2
+name: keycloak
+description: Red Hat Build of Keycloak (RHBK) operator installation
+type: application
+version: 0.1.0
+appVersion: "26.0"

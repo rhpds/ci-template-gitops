@@ -1,0 +1,15 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-6"
+  name: keycloak-pgsql-data
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}
+  volumeMode: Filesystem

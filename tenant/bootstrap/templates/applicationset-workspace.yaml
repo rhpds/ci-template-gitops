@@ -1,4 +1,4 @@
-{{ if .Values.workspace -}}
+{{ if .Values.workspace.enabled -}}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet

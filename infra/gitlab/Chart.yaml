@@ -1,0 +1,7 @@
+apiVersion: v2
+name: gitlab
+description: A Helm chart to deploy Gitlab on Kubernetes
+type: application
+
+version: 0.1.0
+appVersion: 12.5.7

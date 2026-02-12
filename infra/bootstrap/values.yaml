@@ -1,0 +1,47 @@
+# Default values for bootstrap.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# defaults
+default_settings: &git_defaults
+  repoURL: https://github.com/rhpds/ci-template-gitops.git
+  targetRevision: main
+
+deployer:
+  domain: apps.cluster-guid.sandbox.opentlc.com
+  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
+
+# call the platform component
+platform:
+  enabled: true
+  git:
+    path: platform/bootstrap
+    <<: *git_defaults
+
+webterminal:
+  enabled: false
+  git:
+    path: webterminal
+    <<: *git_defaults
+
+rhoai:
+  enabled: false
+  git:
+    path: rhoai
+    <<: *git_defaults
+
+gitlab:
+  enabled: false
+
+OAuthAccountOperator:
+  enabled: false
+  authn: htpasswd
+  git:
+    path: helm
+    <<: *git_defaults
+  # HTPasswd config
+  config:
+    type: HTPasswd
+    htpasswd:
+      htpasswdSecret:
+        name: htpasswd

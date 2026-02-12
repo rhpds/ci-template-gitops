@@ -1,0 +1,31 @@
+# Default values for bootstrap.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# These defaults are for OpenShift 4.21
+
+deployer:
+  domain: apps.cluster-guid.sandbox.opentlc.com
+  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
+
+tenant:
+  name: GUID
+  user: 
+    prefix: user
+    # count: 2 # if we're deploying an event
+
+# create an app in each namespace
+#  who doesn't need a loadtester?
+loadtest:
+  enabled: false
+  requestsPerSecond: 0 #off
+  duration: 1000
+  url: https://example.com/your/app
+
+# create some workspaces (namespaces)
+workspace:
+  enabled: false
+  git:
+    url: https://github.com/rhpds/ci-template-gitops.git
+    revision: main
+    path: workspace

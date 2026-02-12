@@ -1,0 +1,40 @@
+apiVersion: v1
+data:
+  DB_ADAPTER: postgresql
+  DB_HOST: gitlab-postgresql.gitlab.svc
+  DB_NAME: {{ $.Values.postgresql.dbName }}
+  DB_PORT: "5432"
+  DB_USER: {{ $.Values.postgresql.dbUser }}
+  GITLAB_BACKUP_SCHEDULE: daily
+  GITLAB_BACKUP_TIME: "04:30"
+  GITLAB_EMAIL: {{ $.Values.gitlab.email.address }}
+  GITLAB_EMAIL_DISPLAY_NAME: {{ $.Values.gitlab.email.displayName }}
+  GITLAB_EMAIL_REPLY_TO: {{ $.Values.gitlab.email.replyTo }}
+  GITLAB_HOST: {{ $.Values.gitlab.host }}
+  GITLAB_HTTPS: "{{ $.Values.gitlab.https }}"
+  GITLAB_NOTIFY_ON_BROKEN_BUILDS: "true"
+  GITLAB_NOTIFY_PUSHER: "false"
+  GITLAB_PIPELINE_SCHEDULE_WORKER_CRON: '*/5 * * * *'
+  GITLAB_PORT: "443"
+  GITLAB_ROOT_EMAIL: {{ $.Values.gitlab.rootEmail }}
+  GITLAB_SSH_HOST: {{ $.Values.gitlab.ssh.host }}
+  GITLAB_SSH_PORT: "{{ $.Values.gitlab.ssh.port }}"
+  GITLAB_TIMEZONE: Berlin
+  NGINX_MAX_UPLOAD_SIZE: 100m
+  REDIS_HOST: gitlab-redis.gitlab.svc
+  REDIS_PORT: "6379"
+  SMTP_AUTHENTICATION: login
+  SMTP_DOMAIN: {{ $.Values.gitlab.smtp.domain }}
+  SMTP_ENABLED: "{{ $.Values.gitlab.smtp.enabled }}"
+  SMTP_HOST: {{ $.Values.gitlab.smtp.host }}
+  SMTP_PORT: "{{ $.Values.gitlab.smtp.port }}"
+  SMTP_STARTTLS: "true"
+  SMTP_USER: {{ $.Values.gitlab.smtp.user }}
+  TZ: Europe/Berlin
+kind: ConfigMap
+metadata:
+  labels:
+    app: gitlab
+  name: gitlab-cm
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"

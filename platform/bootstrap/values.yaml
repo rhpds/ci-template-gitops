@@ -1,0 +1,13 @@
+keycloakOperator:
+  enabled: true
+  git:
+    repoURL: https://github.com/rhpds/ci-template-gitops.git
+    targetRevision: main
+    path: platform/keycloak-operator
+
+postgresql:
+  enabled: true
+  git:
+    repoURL: https://github.com/rhpds/ci-template-gitops.git
+    targetRevision: main
+    path: platform/postgresql
