@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: {{ .Values.webterminal.git.repoURL }}
-    targetRevision: {{ .Values.webterminal.git.revision }}
+    targetRevision: {{ .Values.webterminal.git.targetRevision }}
     path: webterminal
     helm:
       values: |

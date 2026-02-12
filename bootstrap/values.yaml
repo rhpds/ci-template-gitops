@@ -10,10 +10,14 @@ deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
-# Set to empty to NOT create workspaces
-# workspace: ""
 workspace:
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
     revision: main
     path: workspace
+
+webterminal:
+  git:
+    repoUrl: https://github.com/rhpds/ocp-cluster-addons.git
+    targetRevision: main
+    path: webterminal
