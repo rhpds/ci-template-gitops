@@ -1,0 +1,80 @@
+# Default values for bootstrap.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# defaults
+default_settings: &git_defaults
+  repoURL: https://github.com/rhpds/ci-template-gitops.git
+  targetRevision: main
+
+deployer:
+  domain: apps.cluster-guid.sandbox.opentlc.com
+  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
+
+# call the platform layer, you need this.
+platform:
+  enabled: true
+  git:
+    path: platform/bootstrap
+    <<: *git_defaults
+
+defaultStorageclass:
+  enabled: true
+  git:
+    path: infra/default-storageclass
+    <<: *git_defaults
+
+kubevirtOperator:
+  enabled: false
+  git:
+    path: infra/kubevirt-operator
+    <<: *git_defaults
+
+mtcOperator:
+  enabled: false
+  git:
+    path: infra/mtc-operator
+    <<: *git_defaults
+
+mtvOperator:
+  enabled: false
+  git:
+    path: infra/mtv-operator
+    <<: *git_defaults
+
+nodeHealthCheckOperator:
+  enabled: false
+  git:
+    path: infra/node-health-check-operator
+    <<: *git_defaults
+
+selfNodeRemediationOperator:
+  enabled: false
+  git:
+    path: infra/self-node-remediation-operator
+    <<: *git_defaults
+
+rhoaiOperator:
+  enabled: false
+  git:
+    path: infra/rhoai-operator
+    <<: *git_defaults
+
+deschedulerOperator:
+  enabled: false
+  git:
+    path: infra/descheduler-operator
+    <<: *git_defaults
+
+### Keycloak automation.  You probably don't need this.
+keycloakInfra:
+  enabled: false
+  git:
+    path: infra/keycloak/keycloak-infra
+    <<: *git_defaults
+
+keycloakResources:
+  enabled: false
+  git:
+    path: infra/keycloak/keycloak-resources
+    <<: *git_defaults

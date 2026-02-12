@@ -1,0 +1,35 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: openshift-gitops
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - list:
+      elements:
+        tenantName:
+          {{- $.Values.tenant.names | toYaml | nindent 10 }}
+  template:
+    metadata:
+      name: tenant-{{- "{{" }} tenantName {{- " }}" }}
+      namespace: openshift-gitops
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/rhpds/ci-template-gitops.git
+        revision: gitops-sample
+        path: tenant/bootstrap/
+        helm:
+          values: |
+            tenantName: '{{- "{{" }} tenantName {{- " }}" }}'
+            user:
+              {{- .Values.user | toYaml | nindent 14 }}
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-30"
+spec:
+  description: Platform workloads
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  roles:
+    - name: admin
+      description: Admin access to platform project
+      policies:
+        - p, proj:platform:admin, applications, *, platform/*, allow
+        - p, proj:platform:admin, applicationsets, *, platform/*, allow

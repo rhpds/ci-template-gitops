@@ -1,0 +1,9 @@
+dependencies:
+- name: helper-status-checker
+  repository: https://charts.stderr.at/
+  version: 4.0.16
+- name: tpl
+  repository: https://charts.stderr.at/
+  version: 1.0.26
+digest: sha256:b423e79811a9708450fe09f10a1629318ebe10273c45a6f26662d949e27ee953
+generated: "2026-02-27T14:51:04.175878-05:00"

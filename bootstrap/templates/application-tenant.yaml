@@ -1,0 +1,32 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tenant-{{ .Values.tenant.name | lower }}
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.tenant.git.repoURL }}
+    targetRevision: {{ .Values.tenant.git.targetRevision }}
+    path: {{ .Values.tenant.git.path }}
+    helm:
+      values: |
+        tenant:
+        {{- .Values.tenant | toYaml | nindent 10 }}
+        deployer:
+        {{- .Values.deployer | toYaml | nindent 10 }}
+        user:
+        {{- .Values.user | toYaml | nindent 10 }}
+        workspace:
+        {{- .Values.workspace | toYaml | nindent 10 }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true

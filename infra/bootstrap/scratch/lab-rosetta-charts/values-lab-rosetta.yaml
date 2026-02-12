@@ -1,0 +1,55 @@
+labRosetta:
+  moduleAffinity:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-affinity
+  moduleLiveMigrate:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-live-migrate
+  moduleDynamicSchedule:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-dynamic-schedule
+  moduleHotPlug:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-hot-plug
+  moduleOverCommit:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-over-commit
+  moduleVmFencing:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-vm-fencing
+  moduleDecentralizedLiveMigrate:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-decentralized-live-migrate
+  moduleVmPlacement:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-vm-placement
+  moduleVmRescheduling:
+    enabled: false
+    git:
+      url: https://github.com/rhpds/ci-template-gitops.git
+      revision: main
+      path: tenant/labs/rosetta/module-vm-rescheduling

@@ -1,0 +1,6 @@
+# Default values for ocpOps
+
+tenant:
+  name: GUID
+  user:
+    name: USERNAME

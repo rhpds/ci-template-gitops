@@ -1,0 +1,18 @@
+tenant:
+  name: xyzzy
+
+realm:
+  name: ""  # defaults to tenant name if empty
+  displayName: ""
+  enabled: true
+
+user:
+  prefix: user
+  count: 0
+  names: []
+
+hub:
+  realmName: hub
+
+deployer:
+  domain: cluster.example.com

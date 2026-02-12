@@ -1,0 +1,13 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/self-node-remediation.openshift-workload-availability: ''
+  name: self-node-remediation
+  namespace: openshift-workload-availability
+spec:
+  channel: {{ .Values.operator.channel }}
+  installPlanApproval: {{ .Values.operator.installPlanApproval }}
+  name: self-node-remediation
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace

@@ -1,0 +1,52 @@
+{{ if .Values.labs.helloWorld.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hello-world-{{ .Values.tenant.user.name | lower }}
+  namespace: openshift-gitops
+  labels:
+    app: hello-world
+    tenant: {{ .Values.tenant.name | lower }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.labs.helloWorld.git.repoURL }}
+    targetRevision: {{ .Values.labs.helloWorld.git.targetRevision }}
+    path: {{ .Values.labs.helloWorld.git.path }}
+    helm:
+      values: |
+        # Pass tenant context
+        tenant:
+          name: {{ .Values.tenant.name }}
+
+        # Pass deployer context
+        deployer:
+          domain: {{ .Values.deployer.domain }}
+          apiUrl: {{ .Values.deployer.apiUrl }}
+
+        # Pass hello-world specific values
+        message: {{ .Values.labs.helloWorld.message | quote }}
+        replicas: {{ .Values.labs.helloWorld.replicas }}
+        imageTag: {{ .Values.labs.helloWorld.imageTag | quote }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.labs.helloWorld.namespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false  # Namespace already created by tenant_namespace workload
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

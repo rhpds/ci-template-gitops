@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tenants
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-30"
+spec:
+  description: Tenant workloads
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  roles:
+    - name: admin
+      description: Admin access to tenants project
+      policies:
+        - p, proj:tenants:admin, applications, *, tenants/*, allow
+        - p, proj:tenants:admin, applicationsets, *, tenants/*, allow

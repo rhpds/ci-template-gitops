@@ -1,0 +1,28 @@
+{{ if .Values.nodeHealthCheckOperator.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-health-check-operator
+  namespace: openshift-gitops
+spec:
+  project: infra
+  source:
+    repoURL: {{ .Values.nodeHealthCheckOperator.git.repoURL }}
+    targetRevision: {{ .Values.nodeHealthCheckOperator.git.targetRevision }}
+    path: {{ .Values.nodeHealthCheckOperator.git.path }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

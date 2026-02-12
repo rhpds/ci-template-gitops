@@ -1,0 +1,187 @@
+# Cleans up orphaned tenant resources when a tenant is removed from GitOps.
+#
+# When a tenant is disabled/removed, ArgoCD deletes its resources (sentinel
+# ConfigMap, KeycloakRealmImport CR, CronJobs, etc.) but Keycloak retains the
+# spoke realm, its users, and the hub-side IdP broker. This CronJob detects
+# orphans and cleans them up.
+#
+# Detection uses a two-signal gate to avoid racing with in-progress removals:
+#   1. The tenant's sentinel ConfigMap (idp-registration-<realm>) must be gone
+#   2. The tenant's KeycloakRealmImport CR must also be gone
+# Only when both are absent is cleanup safe to proceed. If the tenant is
+# mid-removal, cleanup skips it and retries on the next run.
+#
+# Resources cleaned up per orphaned tenant:
+#   - Hub IdP (idp-<realm>) from the hub realm
+#   - Spoke realm from Keycloak
+#   - Credentials secret (tenant-<realm>-credentials) from keycloak namespace
+#   - Userdata ConfigMap (userdata-keycloak-<realm>) from keycloak namespace
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: idp-and-realm-cleanup
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: idp-and-realm-cleanup
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["list", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["keycloak-initial-admin"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["list", "delete"]
+  - apiGroups: ["k8s.keycloak.org"]
+    resources: ["keycloakrealmimports"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: idp-and-realm-cleanup
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+subjects:
+  - kind: ServiceAccount
+    name: idp-and-realm-cleanup
+    namespace: keycloak
+roleRef:
+  kind: Role
+  name: idp-and-realm-cleanup
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: idp-and-realm-cleanup
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-11"
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+spec:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: idp-and-realm-cleanup
+          restartPolicy: Never
+          containers:
+            - name: cleanup
+              image: registry.redhat.io/openshift4/ose-cli:latest
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -euo pipefail
+
+                  KEYCLOAK_URL="https://keycloak.keycloak.svc:8443"
+                  HUB_REALM="{{ .Values.hub.realm.name }}"
+
+                  # Get admin credentials from secret
+                  ADMIN_USER=$(kubectl get secret keycloak-initial-admin -n keycloak -o jsonpath='{.data.username}' | base64 -d)
+                  ADMIN_PASS=$(kubectl get secret keycloak-initial-admin -n keycloak -o jsonpath='{.data.password}' | base64 -d)
+
+                  # Get admin token (retry until Keycloak is ready)
+                  TOKEN=""
+                  for i in $(seq 1 10); do
+                    TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+                      -d "grant_type=password" \
+                      -d "client_id=admin-cli" \
+                      -d "username=${ADMIN_USER}" \
+                      -d "password=${ADMIN_PASS}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null) && [ -n "${TOKEN}" ] && break
+                    echo "Waiting for Keycloak... (attempt ${i})"
+                    sleep 10
+                  done
+
+                  if [ -z "${TOKEN}" ]; then
+                    echo "ERROR: Could not obtain admin token"
+                    exit 1
+                  fi
+
+                  API="${KEYCLOAK_URL}/admin/realms/${HUB_REALM}"
+
+                  # List all IdPs in hub realm that match our naming convention
+                  IDPS=$(curl -sk -H "Authorization: Bearer ${TOKEN}" "${API}/identity-provider/instances" | \
+                    python3 -c "import sys,json; [print(i['alias']) for i in json.load(sys.stdin) if i['alias'].startswith('idp-')]" 2>/dev/null || true)
+
+                  # List all sentinel ConfigMaps
+                  CONFIGMAPS=$(kubectl get configmaps -n keycloak -l app.kubernetes.io/component=idp-registration -o jsonpath='{range .items[*]}{.data.idpAlias}{"\n"}{end}' 2>/dev/null || true)
+
+                  # For each IdP, check if its sentinel ConfigMap still exists
+                  for IDP_ALIAS in ${IDPS}; do
+                    if ! echo "${CONFIGMAPS}" | grep -q "^${IDP_ALIAS}$"; then
+                      echo "Orphaned IdP detected: ${IDP_ALIAS} (no sentinel ConfigMap found)"
+
+                      # Extract spoke realm name from alias
+                      SPOKE_REALM="${IDP_ALIAS#idp-}"
+
+                      # Guard: skip if the KeycloakRealmImport CR still exists (tenant removal still in progress)
+                      if kubectl get keycloakrealmimport "${SPOKE_REALM}" -n keycloak &>/dev/null; then
+                        echo "KeycloakRealmImport ${SPOKE_REALM} still exists, skipping cleanup (removal in progress)."
+                        continue
+                      fi
+
+                      # Delete the IdP from hub realm
+                      echo "Deleting IdP ${IDP_ALIAS}..."
+                      HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X DELETE "${API}/identity-provider/instances/${IDP_ALIAS}" \
+                        -H "Authorization: Bearer ${TOKEN}")
+                      if [ "${HTTP_CODE}" = "204" ] || [ "${HTTP_CODE}" = "404" ]; then
+                        echo "IdP ${IDP_ALIAS} deleted (${HTTP_CODE})."
+                      else
+                        echo "WARNING: Unexpected response deleting IdP ${IDP_ALIAS}: ${HTTP_CODE}"
+                      fi
+
+                      # Delete the orphaned spoke realm
+                      echo "Deleting spoke realm ${SPOKE_REALM}..."
+                      HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X DELETE \
+                        "${KEYCLOAK_URL}/admin/realms/${SPOKE_REALM}" \
+                        -H "Authorization: Bearer ${TOKEN}")
+                      if [ "${HTTP_CODE}" = "204" ] || [ "${HTTP_CODE}" = "404" ]; then
+                        echo "Spoke realm ${SPOKE_REALM} deleted (${HTTP_CODE})."
+                      else
+                        echo "WARNING: Unexpected response deleting spoke realm ${SPOKE_REALM}: ${HTTP_CODE}"
+                      fi
+
+                      # Delete the tenant organization (Home IdP Discovery)
+                      ORG_NAME="org-${SPOKE_REALM}"
+                      ORG_ID=$(curl -sk -H "Authorization: Bearer ${TOKEN}" \
+                        "${API}/organizations?search=${ORG_NAME}&exact=true" | \
+                        python3 -c "import sys,json; orgs=json.load(sys.stdin); print(orgs[0]['id'] if orgs else '')" 2>/dev/null || true)
+                      if [ -n "${ORG_ID}" ]; then
+                        echo "Deleting organization ${ORG_NAME}..."
+                        curl -sk -o /dev/null -X DELETE \
+                          "${API}/organizations/${ORG_ID}" \
+                          -H "Authorization: Bearer ${TOKEN}"
+                        echo "Organization ${ORG_NAME} deleted."
+                      fi
+
+                      # Delete the tenant credentials secret
+                      CRED_SECRET="tenant-${SPOKE_REALM}-credentials"
+                      if kubectl get secret "${CRED_SECRET}" -n keycloak &>/dev/null; then
+                        echo "Deleting credentials secret ${CRED_SECRET}..."
+                        kubectl delete secret "${CRED_SECRET}" -n keycloak
+                      fi
+
+                      echo "Cleanup complete for ${IDP_ALIAS}."
+                    fi
+                  done
+
+                  echo "IdP cleanup sweep finished."

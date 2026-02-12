@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myapp-{{ .Values.tenant.name }}
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tenants
+  source:
+    repoURL: {{ .Values.myapp.git.repoURL }}
+    targetRevision: {{ .Values.myapp.git.targetRevision }}
+    path: {{ .Values.myapp.git.path }}
+    helm:
+      values: |
+        deployer:
+        {{- .Values.deployer | toYaml | nindent 12 }}
+        tenant:
+        {{- .Values.tenant | toYaml | nindent 12 }}
+        myapp:
+        {{- .Values.myapp | toYaml | nindent 12 }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.myapp.namespace }}
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

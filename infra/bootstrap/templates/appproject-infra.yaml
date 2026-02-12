@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-30"
+  name: infra
+  namespace: openshift-gitops
+spec:
+  description: Operator installation and infrastructure setup
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  roles:
+    - name: admin
+      description: Admin access to infra project
+      policies:
+        - p, proj:infra:admin, applications, *, infra/*, allow
+        - p, proj:infra:admin, applicationsets, *, infra/*, allow

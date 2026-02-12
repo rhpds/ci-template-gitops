@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mtc-operator
+description: Migration Toolkit for Containers operator installation
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

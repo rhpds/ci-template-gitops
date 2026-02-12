@@ -1,0 +1,362 @@
+# Provisions the hub Keycloak realm after it is created by KeycloakRealmImport.
+#
+# Runs as a one-shot Job (sync-wave -10, after the realm import at -11).
+# Waits for the hub realm to be ready before proceeding, since the
+# KeycloakRealmImport is processed asynchronously by the Keycloak Operator.
+#
+# Idempotent — safe to re-run. All operations check-then-create/update:
+#   - Generates random OAuth client secret and ssoadmin password on first run,
+#     stores them in the hub-credentials Secret; loads existing values on re-run
+#   - Creates or updates the OpenShift OAuth OIDC client in the hub realm
+#   - Syncs the OAuth client secret to openshift-config namespace
+#   - Creates or updates the ssoadmin user and sets its password
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hub-provisioner
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hub-provisioner
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hub-provisioner
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+subjects:
+  - kind: ServiceAccount
+    name: hub-provisioner
+    namespace: keycloak
+roleRef:
+  kind: ClusterRole
+  name: hub-provisioner
+  apiGroup: rbac.authorization.k8s.io
+---
+{{- $hubJobConfig := dict "realm" .Values.hub.realm.name "domain" .Values.deployer.domain "oauth" .Values.oauth "ssoadmin" .Values.ssoadmin -}}
+{{- $hubJobHash := $hubJobConfig | toJson | sha256sum | trunc 8 -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hub-provisioner-{{ $hubJobHash }}
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 30
+  template:
+    spec:
+      serviceAccountName: hub-provisioner
+      restartPolicy: OnFailure
+      containers:
+        - name: provision
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          env:
+            - name: KEYCLOAK_URL
+              value: "https://keycloak.keycloak.svc:8443"
+            - name: REALM
+              value: {{ .Values.hub.realm.name | quote }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+
+              CREDENTIALS_SECRET="hub-credentials"
+              CREDENTIALS_NS="keycloak"
+
+              # --- Generate or load credentials secret ---
+              if kubectl get secret "${CREDENTIALS_SECRET}" -n "${CREDENTIALS_NS}" &>/dev/null; then
+                echo "Credentials secret exists, loading..."
+                OAUTH_CLIENT_SECRET=$(kubectl get secret "${CREDENTIALS_SECRET}" -n "${CREDENTIALS_NS}" -o jsonpath='{.data.oauth-client-secret}' | base64 -d)
+                SSOADMIN_PASSWORD=$(kubectl get secret "${CREDENTIALS_SECRET}" -n "${CREDENTIALS_NS}" -o jsonpath='{.data.ssoadmin-password}' | base64 -d)
+              else
+                echo "Generating random credentials..."
+                OAUTH_CLIENT_SECRET=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 32)
+                SSOADMIN_PASSWORD=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 16)
+
+                kubectl create secret generic "${CREDENTIALS_SECRET}" \
+                  -n "${CREDENTIALS_NS}" \
+                  --from-literal=oauth-client-secret="${OAUTH_CLIENT_SECRET}" \
+                  --from-literal=ssoadmin-password="${SSOADMIN_PASSWORD}"
+                echo "Credentials secret created."
+              fi
+
+              # Get admin credentials
+              ADMIN_USER=$(kubectl get secret keycloak-initial-admin -n keycloak -o jsonpath='{.data.username}' | base64 -d)
+              ADMIN_PASS=$(kubectl get secret keycloak-initial-admin -n keycloak -o jsonpath='{.data.password}' | base64 -d)
+
+              # Get admin token (retry until Keycloak is ready)
+              for i in $(seq 1 30); do
+                TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+                  -d "grant_type=password" \
+                  -d "client_id=admin-cli" \
+                  -d "username=${ADMIN_USER}" \
+                  -d "password=${ADMIN_PASS}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null) && [ -n "${TOKEN}" ] && break
+                echo "Waiting for Keycloak... (attempt ${i})"
+                sleep 10
+              done
+
+              if [ -z "${TOKEN}" ]; then
+                echo "ERROR: Could not obtain admin token"
+                exit 1
+              fi
+
+              API="${KEYCLOAK_URL}/admin/realms/${REALM}"
+
+              # Wait for realm to exist (KeycloakRealmImport may still be processing)
+              for i in $(seq 1 30); do
+                REALM_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
+                  -H "Authorization: Bearer ${TOKEN}" "${API}")
+                [ "${REALM_STATUS}" = "200" ] && break
+                echo "Waiting for realm ${REALM}... (attempt ${i}, status ${REALM_STATUS})"
+                sleep 10
+              done
+
+              if [ "${REALM_STATUS}" != "200" ]; then
+                echo "ERROR: Realm ${REALM} not available after 30 attempts"
+                exit 1
+              fi
+              echo "Realm ${REALM} is ready."
+
+              {{- if .Values.oauth.enabled }}
+              #
+              # --- OAuth OIDC Client ---
+              #
+              CLIENT_ID="{{ .Values.oauth.clientId }}"
+              REDIRECT_URI="https://oauth-openshift.{{ .Values.deployer.domain }}/oauth2callback/keycloak"
+
+              CLIENT_UUID=$(curl -sk -H "Authorization: Bearer ${TOKEN}" \
+                "${API}/clients?clientId=${CLIENT_ID}" | \
+                python3 -c "import sys,json; clients=json.load(sys.stdin); print(clients[0]['id'] if clients else '')" 2>/dev/null || true)
+
+              CLIENT_PAYLOAD='{
+                "clientId": "'"${CLIENT_ID}"'",
+                "enabled": true,
+                "clientAuthenticatorType": "client-secret",
+                "secret": "'"${OAUTH_CLIENT_SECRET}"'",
+                "publicClient": false,
+                "standardFlowEnabled": true,
+                "directAccessGrantsEnabled": false,
+                "redirectUris": ["'"${REDIRECT_URI}"'"],
+                "protocol": "openid-connect",
+                "defaultClientScopes": ["openid", "email", "profile"]
+              }'
+
+              if [ -n "${CLIENT_UUID}" ]; then
+                echo "OAuth client ${CLIENT_ID} already exists (${CLIENT_UUID}), updating..."
+                HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X PUT "${API}/clients/${CLIENT_UUID}" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "${CLIENT_PAYLOAD}")
+                if [ "${HTTP_CODE}" = "204" ] || [ "${HTTP_CODE}" = "200" ]; then
+                  echo "OAuth client ${CLIENT_ID} updated (${HTTP_CODE})."
+                else
+                  echo "ERROR: Failed to update OAuth client ${CLIENT_ID}: ${HTTP_CODE}"
+                  exit 1
+                fi
+              else
+                echo "Creating OAuth client ${CLIENT_ID}..."
+                HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X POST "${API}/clients" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "${CLIENT_PAYLOAD}")
+                if [ "${HTTP_CODE}" = "201" ]; then
+                  echo "OAuth client ${CLIENT_ID} created."
+                elif [ "${HTTP_CODE}" = "409" ]; then
+                  echo "OAuth client ${CLIENT_ID} already exists (409 conflict), skipping."
+                else
+                  echo "ERROR: Failed to create OAuth client ${CLIENT_ID}: ${HTTP_CODE}"
+                  exit 1
+                fi
+              fi
+
+              # Sync client secret to openshift-config for the OAuth CR
+              kubectl apply -f - <<EOSECRET
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: keycloak-oauth-client-secret
+                namespace: openshift-config
+              type: Opaque
+              stringData:
+                clientSecret: "${OAUTH_CLIENT_SECRET}"
+              EOSECRET
+              echo "OAuth client secret synced to openshift-config."
+              {{- end }}
+
+              {{- if .Values.ssoadmin.enabled }}
+              #
+              # --- SSO Admin User ---
+              #
+              USERNAME="{{ .Values.ssoadmin.username }}"
+              EMAIL="{{ .Values.ssoadmin.email }}"
+
+              USER_ID=$(curl -sk -H "Authorization: Bearer ${TOKEN}" \
+                "${API}/users?username=${USERNAME}&exact=true" | \
+                python3 -c "import sys,json; users=json.load(sys.stdin); print(users[0]['id'] if users else '')" 2>/dev/null || true)
+
+              if [ -n "${USER_ID}" ]; then
+                echo "User ${USERNAME} already exists (${USER_ID}), updating profile..."
+                curl -sk -o /dev/null -w "%{http_code}" -X PUT "${API}/users/${USER_ID}" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "email": "'"${EMAIL}"'",
+                    "emailVerified": true,
+                    "firstName": "SSO",
+                    "lastName": "Admin"
+                  }'
+              else
+                echo "Creating user ${USERNAME}..."
+                HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X POST "${API}/users" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "username": "'"${USERNAME}"'",
+                    "email": "'"${EMAIL}"'",
+                    "emailVerified": true,
+                    "enabled": true,
+                    "firstName": "SSO",
+                    "lastName": "Admin"
+                  }')
+                if [ "${HTTP_CODE}" = "201" ]; then
+                  echo "User ${USERNAME} created."
+                elif [ "${HTTP_CODE}" = "409" ]; then
+                  echo "User ${USERNAME} already exists (409 conflict)."
+                else
+                  echo "ERROR: Failed to create user ${USERNAME}: ${HTTP_CODE}"
+                  exit 1
+                fi
+
+                USER_ID=$(curl -sk -H "Authorization: Bearer ${TOKEN}" \
+                  "${API}/users?username=${USERNAME}&exact=true" | \
+                  python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+                echo "User ID: ${USER_ID}"
+              fi
+
+              # Set password (idempotent — always sets to desired value)
+              HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X PUT "${API}/users/${USER_ID}/reset-password" \
+                -H "Authorization: Bearer ${TOKEN}" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "type": "password",
+                  "value": "'"${SSOADMIN_PASSWORD}"'",
+                  "temporary": false
+                }')
+              if [ "${HTTP_CODE}" = "204" ] || [ "${HTTP_CODE}" = "200" ]; then
+                echo "User ${USERNAME} password set."
+              else
+                echo "ERROR: Failed to set password for ${USERNAME}: ${HTTP_CODE}"
+                exit 1
+              fi
+              echo "User ${USERNAME} provisioned."
+
+              # Write ssoadmin userdata ConfigMap to openshift-gitops
+              kubectl apply -f - <<EOSSOCM
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: infra-userdata-keycloak
+                namespace: openshift-gitops
+                labels:
+                  demo.redhat.com/infra: "true"
+              data:
+                provision_data: |
+                  users:
+                    ${USERNAME}:
+                      username: ${USERNAME}
+              EOSSOCM
+              echo "SSO admin userdata ConfigMap written to openshift-gitops."
+              {{- end }}
+
+              #
+              # --- Enable Organizations and configure Home IdP Discovery ---
+              #
+              # Keycloak 26 Organizations feature provides automatic IdP routing:
+              # when a user types "username@domain" at the hub login page, Keycloak
+              # checks if the domain matches any organization and redirects to that
+              # org's linked IdP.
+              #
+              # The hub-provisioner enables the Organizations feature on the hub realm.
+              # The idp-registrar CronJob (per-tenant) then creates an organization
+              # for each spoke realm and links its IdP + domain.
+              #
+
+              echo "Enabling Organizations feature on hub realm..."
+              REALM_REP=$(curl -sk -H "Authorization: Bearer ${TOKEN}" "${API}")
+              ORGS_ENABLED=$(echo "${REALM_REP}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('organizationsEnabled', False))" 2>/dev/null)
+
+              if [ "${ORGS_ENABLED}" != "True" ]; then
+                UPDATED_REP=$(echo "${REALM_REP}" | python3 -c 'import sys,json; r=json.load(sys.stdin); r["organizationsEnabled"]=True; print(json.dumps(r))')
+                curl -sk -o /dev/null -w "%{http_code}" -X PUT "${API}" \
+                  -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "${UPDATED_REP}"
+                echo "Organizations enabled on hub realm."
+              else
+                echo "Organizations already enabled."
+              fi
+
+              #
+              # --- Disable "Review Profile" in first broker login flow ---
+              #
+              # By default, the "first broker login" flow shows an "Update Account
+              # Information" form the first time a user authenticates via a federated
+              # IdP. Since the spoke realm already provides all profile fields (email,
+              # name) via OIDC claims, this form is unnecessary. Disabling the
+              # "idp-review-profile" execution skips it.
+              #
+
+              echo "Disabling Review Profile in first broker login flow..."
+              EXECUTIONS=$(curl -sk -H "Authorization: Bearer ${TOKEN}" \
+                "${API}/authentication/flows/first%20broker%20login/executions")
+
+              # Extract the full execution object for idp-review-profile
+              REVIEW_EXEC=$(echo "${EXECUTIONS}" | python3 -c "
+              import sys, json
+              for e in json.load(sys.stdin):
+                  if e.get('providerId') == 'idp-review-profile':
+                      print(json.dumps(e))
+                      break
+              " 2>/dev/null || true)
+
+              if [ -n "${REVIEW_EXEC}" ]; then
+                REVIEW_REQ=$(echo "${REVIEW_EXEC}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('requirement',''))")
+
+                if [ "${REVIEW_REQ}" != "DISABLED" ]; then
+                  # Update the requirement to DISABLED by sending the full execution
+                  # representation with the requirement field changed
+                  UPDATED_EXEC=$(echo "${REVIEW_EXEC}" | python3 -c 'import sys,json; e=json.load(sys.stdin); e["requirement"]="DISABLED"; print(json.dumps(e))')
+                  HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -X PUT \
+                    "${API}/authentication/flows/first%20broker%20login/executions" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    -H "Content-Type: application/json" \
+                    -d "${UPDATED_EXEC}")
+                  echo "Review Profile disabled (${HTTP_CODE})."
+                else
+                  echo "Review Profile already disabled."
+                fi
+              else
+                echo "WARNING: Could not find idp-review-profile execution."
+              fi
+
+              echo "Hub provisioning complete."
+              echo "Credentials are stored in secret ${CREDENTIALS_SECRET} in namespace ${CREDENTIALS_NS}."

@@ -1,0 +1,28 @@
+{{ if .Values.kubevirtOperator.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubevirt-operator
+  namespace: openshift-gitops
+spec:
+  project: infra
+  source:
+    repoURL: {{ .Values.kubevirtOperator.git.repoURL }}
+    targetRevision: {{ .Values.kubevirtOperator.git.targetRevision }}
+    path: {{ .Values.kubevirtOperator.git.path }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

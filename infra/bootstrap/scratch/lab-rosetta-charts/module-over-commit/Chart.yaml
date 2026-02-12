@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rosetta-lab-module-over-commit
+description: Rosetta lab resources for Module "Over-commit"
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

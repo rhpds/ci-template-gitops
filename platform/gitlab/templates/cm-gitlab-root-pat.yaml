@@ -1,0 +1,12 @@
+kind: ConfigMap
+metadata:
+  name:  cm-create-root-pat
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+apiVersion: v1
+data:
+  create-root-pat.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo -n "token = User.find(1).personal_access_tokens.create(name: 'apitoken', impersonation: false, expires_at: 365.days.from_now, scopes: [:api]); token.save!; token_value = token.token; File.open('/tmp/root.pat', 'w', 0600) { |file| file.write(token_value) }" | ./bin/rails console

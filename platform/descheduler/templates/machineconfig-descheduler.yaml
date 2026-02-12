@@ -1,0 +1,15 @@
+{{- if .Values.descheduler.enable_machineconfig -}}
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  namespace: openshift-machine-config-operator
+  name: 99-openshift-machineconfig-worker-psi-karg
+spec:
+  kernelArguments:
+  - psi=1
+{{- end }}

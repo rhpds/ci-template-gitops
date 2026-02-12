@@ -1,0 +1,43 @@
+# Default values for tenant/bootstrap.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# defaults
+default_settings: &git_defaults
+  repoURL: https://github.com/rhpds/ci-template-gitops.git
+  targetRevision: main
+
+deployer:
+  domain: apps.cluster-guid.example.com
+  apiUrl: https://api.cluster-guid.example.com:6443
+  guid: GUID
+
+tenant:
+  name: GUID
+  user:
+    name: USERNAME
+
+myapp:
+  git:
+    path: tenant/myapp
+    <<: *git_defaults
+  namespace: myapp-USERNAME
+
+myotherapp:
+  namespace: myotherapp-USERNAME
+
+labs:
+  ocpOps:
+    enabled: false
+    git:
+      path: tenant/labs/ocpOps
+      <<: *git_defaults
+  helloWorld:
+    enabled: false
+    git:
+      path: tenant/labs/helloWorld
+      <<: *git_defaults
+    namespace: default
+    message: "🎓 Hello from DEFAULT values - edit catalog to override me!"
+    replicas: 1
+    imageTag: "latest"

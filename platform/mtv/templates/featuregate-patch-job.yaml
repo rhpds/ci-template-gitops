@@ -1,0 +1,51 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: featuregate-patch-job
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: featuregate-patch-job
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: featuregate-patch-job
+  namespace: default
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: featuregate-patch-job
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: featuregate-patch-job
+      containers:
+      - name: featuregate-patch-job
+        image: image-registry.openshift-image-registry.svc:5000/openshift/cli
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "######################"
+          echo "# Patch the kubevirt-hyperconverged hyperconverged CR with decentralizedLiveMigration true"
+          echo "######################"
+
+          oc patch hyperconverged kubevirt-hyperconverged -n openshift-cnv --type json -p '[{"op":"replace", "path": "/spec/featureGates/decentralizedLiveMigration", "value": true}]'
