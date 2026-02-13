@@ -10,14 +10,22 @@ deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
+# deploy an operator
+webterminal:
+  git:
+    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
+    targetRevision: main
+    path: webterminal
+
+# create some workspaces (namespaces)
 workspace:
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
     revision: main
     path: workspace
 
-webterminal:
-  git:
-    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
-    targetRevision: main
-    path: webterminal
+# create an app in each namespace
+#  who doesn't need a loadtester?
+
+loadtest:
+  enabled: true
