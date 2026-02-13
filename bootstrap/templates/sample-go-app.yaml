@@ -11,7 +11,7 @@ spec:
     targetRevision: main
     path: .
     directory:
-      include: deploy.yaml
+      include: devfile.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: sample-go-app
