@@ -1,0 +1,10 @@
+{{- $userCount := int .Values.user.count }}
+{{- range $index := until $userCount }}
+---
+apiVersion: openshift-oauth-account.demo.redhat.com/v1
+kind: OAuthAccount
+metadata:
+  name: {{ $.Values.user.prefix }}{{ add $index 1}}
+spec:
+  password: cGFzc3dvcmQ=
+{{- end }}

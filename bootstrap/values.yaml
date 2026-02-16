@@ -2,9 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# These defaults are for OpenShift 4.21
+
+# create some users
 user:
   count: 2
   prefix: user
+
+userOperator:
+  authn: htpasswd
+  git:
+    repoURL: https://github.com/rhpds/openshift-oauth-account-operator.git
+    targetRevision: main
+    path: helm
+  # HTPasswd config
+  config:
+    type: HTPasswd
+    htpasswd:
+      htpasswdSecret:
+        name: htpasswd
 
 deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
@@ -17,6 +33,7 @@ webterminal:
     targetRevision: main
     path: webterminal
   startingCSV: webterminal.v1.13.0
+
 # create some workspaces (namespaces)
 workspace:
   git:
