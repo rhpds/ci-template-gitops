@@ -4,24 +4,24 @@
 
 # These defaults are for OpenShift 4.21
 
+# Defaults from the gitops-bootstrap workload
+#
+deployer:
+  domain: apps.cluster-guid.sandbox.opentlc.com
+  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
+
+# Local defaults
 defaultRevision: &revision gitops-sample
 
-tenant:
-  names:
-    - xyzzy
-    - lsmft
-    - magic
+##################################
+### Set up the infrastructure
+##################################
 
 infra:
   git:
     repoURL: https://github.com/rhpds/ci-template-gitops.git
     targetRevision: *revision
     path: infra/bootstrap/
-
-# create some users
-user:
-  count: 2
-  prefix: user
 
 userOperator:
   authn: htpasswd
@@ -36,10 +36,6 @@ userOperator:
       htpasswdSecret:
         name: htpasswd
 
-deployer:
-  domain: apps.cluster-guid.sandbox.opentlc.com
-  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
-
 # deploy an operator
 webterminal:
   git:
@@ -47,6 +43,21 @@ webterminal:
     targetRevision: main
     path: webterminal
   startingCSV: webterminal.v1.13.0
+
+##################################
+###### Create some tenants
+##################################
+
+tenant:
+  names:
+    - xyzzy
+    - lsmft
+    - magic
+
+# each tenant creates some users with the OAuthAccount custom resource
+user:
+  count: 2
+  prefix: user
 
 # create some workspaces (namespaces)
 workspace:
@@ -57,7 +68,6 @@ workspace:
 
 # create an app in each namespace
 #  who doesn't need a loadtester?
-
 loadtest:
   enabled: true
   requestsPerSecond: 0 #off
