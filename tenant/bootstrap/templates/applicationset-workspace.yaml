@@ -15,7 +15,7 @@ spec:
 {{- end }}
   template:
     metadata:
-      name: workspace-{{ .Values.tenant.name | kebabcase }}-{{- "{{" }} user {{- " }}" }}
+      name: workspace-{{ .Values.tenant.name | lower }}-{{- "{{" }} user {{- " }}" }}
       namespace: openshift-gitops
     spec:
       project: default
