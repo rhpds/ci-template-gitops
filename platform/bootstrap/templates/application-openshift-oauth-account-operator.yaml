@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openshift-oauth-account-operator
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.userOperator.git.repoURL }}
+    targetRevision: {{ .Values.userOperator.git.targetRevision }}
+    path: {{ .Values.userOperator.git.path }}
+    helm:
+      values: |
+        config:
+        {{- .Values.userOperator.config | toYaml | nindent 10 }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true

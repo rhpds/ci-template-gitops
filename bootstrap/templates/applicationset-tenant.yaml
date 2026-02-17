@@ -1,0 +1,33 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: Tenant
+  namespace: openshift-gitops
+spec:
+  generators:
+  - list:
+      elements:
+{{- $userCount := int .Values.user.count }}
+{{- range $index := until $userCount }}
+      - tenant: {{ $.Values.user.prefix }}{{ add $index 1}}
+{{- end }}
+  template:
+    metadata:
+      name: workspace-{{- "{{" }} tenant {{- " }}" }}
+      namespace: openshift-gitops
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/rhpds/ci-template-gitops.git
+        revision: gitops-sample
+        path: tenant/bootstrap/
+        helm:
+          values: |
+            username: '{{- "{{" }} user {{- " }}" }}'
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: false

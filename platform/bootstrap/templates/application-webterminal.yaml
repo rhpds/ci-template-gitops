@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: webterminal
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.webterminal.git.repoURL }}
+    targetRevision: {{ .Values.webterminal.git.targetRevision }}
+    path: webterminal
+    helm:
+      values: |
+        operator:
+          {{- if .Values.webterminal.startingCSV }}
+          startingCSV: {{ .Values.webterminal.startingCSV }}
+          {{- end }}
+          installPlanApproval: Automatic
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10         # Max number of retry attempts
+      backoff:
+        duration: 5s    # Initial wait time
+        factor: 2       # Multiply wait time by this factor each fail (5s, 10s, 20s...)
+        maxDuration: 3m # Cap the wait time at 3 minutes
