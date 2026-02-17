@@ -1,6 +1,6 @@
 {{- $userCount := int .Values.user.count }}
 {{- range $index := until $userCount }}
--a--
+---
 apiVersion: openshift-oauth-account.demo.redhat.com/v1
 kind: OAuthAccount
 metadata:
