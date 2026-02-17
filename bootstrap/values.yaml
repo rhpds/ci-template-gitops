@@ -45,14 +45,15 @@ webterminal:
   startingCSV: webterminal.v1.13.0
 
 ##################################
-###### Create some tenants
+###### Create a tenant
 ##################################
 
 tenant:
-  names:
-    - xyzzy
-    - lsmft
-    - magic
+  name: xyzzy
+  git:
+    repoURL: https://github.com/rhpds/ci-template-gitops.git
+    targetRevision: *revision
+    path: tenant/bootstrap/
 
 # each tenant creates some users with the OAuthAccount custom resource
 user:
