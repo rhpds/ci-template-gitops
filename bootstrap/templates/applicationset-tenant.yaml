@@ -22,6 +22,8 @@ spec:
         helm:
           values: |
             tenantName: '{{- "{{" }} name {{- " }}" }}'
+            user:
+              {{- .Values.user | toYaml | nindent 14 }}
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:
