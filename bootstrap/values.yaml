@@ -4,8 +4,19 @@
 
 # These defaults are for OpenShift 4.21
 
+defaultRevision: &revision gitops-sample
+
 tenant:
-  name: GUID
+  names:
+    - xyzzy
+    - lsmft
+    - magic
+
+infra:
+  git:
+    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
+    targetRevision: *revision
+    path: infra
 
 # create some users
 user:
