@@ -28,11 +28,11 @@ spec:
               protocol: TCP
           env:
             - name: REQUESTS_PER_SECOND
-              value: "2"
+              value: "{{ $.Values.loadtest.requestsPerSecond }}"
             - name: DURATION
-              value: "10000"
+              value: "{{ $.Values.loadtest.duration }}"
             - name: URL
-              value: "<this should be an openshift app URL>"
+              value: "{{ $.Values.loadtest.url }}"
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File

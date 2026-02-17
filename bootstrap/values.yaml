@@ -46,3 +46,6 @@ workspace:
 
 loadtest:
   enabled: true
+  requestsPerSecond: 0 #off
+  duration: 1000
+  url: https://example.com/your/app
