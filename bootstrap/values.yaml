@@ -65,7 +65,7 @@ workspace:
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
     revision: main
-    path: workspace
+    path: tenant/workspace
 
 # create an app in each namespace
 #  who doesn't need a loadtester?
