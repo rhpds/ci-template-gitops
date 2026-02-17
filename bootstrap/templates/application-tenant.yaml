@@ -12,6 +12,8 @@ spec:
     path: {{ .Values.tenant.git.path }}
     helm:
       values: |
+        tenant:
+        {{- .Values.deployer | toYaml | nindent 10 }}
         deployer:
         {{- .Values.deployer | toYaml | nindent 10 }}
         user:
