@@ -11,7 +11,7 @@ spec:
       elements:
 {{- $userCount := int .Values.user.count }}
 {{- range $index := until $userCount }}
-      - user: {{ $.Values.user.prefix }}{{ add $index 1}}
+      - user: {{ $.Values.tenant.name | lower }}-{{ $.Values.user.prefix }}{{ add $index 1}}
 {{- end }}
   template:
     metadata:
@@ -26,12 +26,6 @@ spec:
         helm:
           values: |
             username: '{{- "{{" }} user {{- " }}" }}'
-            deployer:
-            {{- .Values.deployer | toYaml | nindent 14 }}
-            tenant:
-            {{- .Values.tenant | toYaml | nindent 14 }}
-            loadtest:
-            {{- .Values.loadtest | toYaml | nindent 14 }}
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:

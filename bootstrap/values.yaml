@@ -64,7 +64,7 @@ user:
 workspace:
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
-    revision: main
+    revision: *revision
     path: tenant/workspace/
 
 # create an app in each namespace
