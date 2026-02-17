@@ -2,19 +2,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: tenant
+  name: tenants
   namespace: openshift-gitops
 spec:
   generators:
   - list:
-      elements:
-{{- $userCount := int .Values.user.count }}
-{{- range $index := until $userCount }}
-      - tenant: {{ $.Values.user.prefix }}{{ add $index 1}}
-{{- end }}
+      name:
+        {{- $.Values.tenant.names | toYaml | nindent 8 }}
   template:
     metadata:
-      name: tenant-{{- "{{" }} tenant {{- " }}" }}
+      name: tenant-{{- "{{" }} name {{- " }}" }}
       namespace: openshift-gitops
     spec:
       project: default
@@ -24,7 +21,7 @@ spec:
         path: tenant/bootstrap/
         helm:
           values: |
-            username: '{{- "{{" }} user {{- " }}" }}'
+            tenantName: '{{- "{{" }} name {{- " }}" }}'
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:
