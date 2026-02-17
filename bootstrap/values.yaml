@@ -16,7 +16,7 @@ infra:
   git:
     repoURL: https://github.com/rhpds/ocp-cluster-addons.git
     targetRevision: *revision
-    path: infra
+    path: infra/bootstrap/
 
 # create some users
 user:
