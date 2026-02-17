@@ -11,11 +11,11 @@ spec:
       elements:
 {{- $userCount := int .Values.user.count }}
 {{- range $index := until $userCount }}
-      - user: {{ $.Values.tenant.name | lower }}-{{ $.Values.user.prefix }}{{ add $index 1}}
+      - user: {{ $.Values.user.prefix }}{{ add $index 1}}-{{ $.Values.tenant.name | lower }}
 {{- end }}
   template:
     metadata:
-      name: workspace-{{- "{{" }} user {{- " }}" }}-{{ .Values.tenant.name | lower }}
+      name: workspace-{{- "{{" }} user {{- " }}" }}
       namespace: openshift-gitops
     spec:
       project: default
