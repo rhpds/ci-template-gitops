@@ -9,11 +9,12 @@ spec:
   goTemplateOptions: ["missingkey=error"]
   generators:
   - list:
-      name:
-        {{- $.Values.tenant.names | toYaml | nindent 8 }}
+      elements:
+        tenantName:
+          {{- $.Values.tenant.names | toYaml | nindent 10 }}
   template:
     metadata:
-      name: tenant-{{- "{{" }} name {{- " }}" }}
+      name: tenant-{{- "{{" }} tenantName {{- " }}" }}
       namespace: openshift-gitops
     spec:
       project: default
@@ -23,7 +24,7 @@ spec:
         path: tenant/bootstrap/
         helm:
           values: |
-            tenantName: '{{- "{{" }} name {{- " }}" }}'
+            tenantName: '{{- "{{" }} tenantName {{- " }}" }}'
             user:
               {{- .Values.user | toYaml | nindent 14 }}
       destination:
