@@ -5,6 +5,8 @@ metadata:
   name: tenants
   namespace: openshift-gitops
 spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
   generators:
   - list:
       name:
