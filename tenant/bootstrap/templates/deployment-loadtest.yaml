@@ -6,7 +6,7 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: loadtest
+  name: loadtest-{{ $namespace }}
   namespace: {{ $namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
