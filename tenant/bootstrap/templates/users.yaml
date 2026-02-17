@@ -4,7 +4,7 @@
 apiVersion: openshift-oauth-account.demo.redhat.com/v1
 kind: OAuthAccount
 metadata:
-  name: {{ $.Values.user.prefix }}{{ add $index 1}}{{ $.Values.tenant.name }}
+  name: {{ $.Values.user.prefix }}{{ add $index 1}}-{{ $.Values.tenant.name | lower }}
 spec:
   password: cGFzc3dvcmQ=
 {{- end }}
