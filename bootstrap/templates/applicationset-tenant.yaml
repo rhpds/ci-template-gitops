@@ -14,7 +14,7 @@ spec:
 {{- end }}
   template:
     metadata:
-      name: workspace-{{- "{{" }} tenant {{- " }}" }}
+      name: tenant-{{- "{{" }} tenant {{- " }}" }}
       namespace: openshift-gitops
     spec:
       project: default
