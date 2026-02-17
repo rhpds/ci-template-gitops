@@ -14,7 +14,7 @@ tenant:
 
 infra:
   git:
-    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
+    repoURL: https://github.com/rhpds/ci-template-gitops.git
     targetRevision: *revision
     path: infra/bootstrap/
 
