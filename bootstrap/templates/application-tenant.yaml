@@ -16,6 +16,8 @@ spec:
         {{- .Values.deployer | toYaml | nindent 10 }}
         user:
         {{- .Values.user | toYaml | nindent 10 }}
+        workspace:
+        {{- .Values.workspace | toYaml | nindent 10 }}
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
