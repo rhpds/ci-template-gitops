@@ -15,7 +15,7 @@ spec:
 {{- end }}
   template:
     metadata:
-      name: workspace-{{ .Values.tenant.name }}-{{- "{{" }} user {{- " }}" }}
+      name: workspace-{{ .Values.tenant.name | kebabcase }}-{{- "{{" }} user {{- " }}" }}
       namespace: openshift-gitops
     spec:
       project: default
@@ -26,6 +26,10 @@ spec:
         helm:
           values: |
             username: '{{- "{{" }} user {{- " }}" }}'
+            deployer:
+            {{- .Values.deployer | toYaml | nindent 14 }}
+            tenant:
+            {{- .Values.tenant | toYaml | nindent 14 }}
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:

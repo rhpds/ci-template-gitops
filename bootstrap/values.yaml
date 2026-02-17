@@ -49,7 +49,7 @@ webterminal:
 ##################################
 
 tenant:
-  name: xyzzy
+  name: xyZzy
   git:
     repoURL: https://github.com/rhpds/ci-template-gitops.git
     targetRevision: *revision
