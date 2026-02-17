@@ -13,7 +13,7 @@ spec:
     helm:
       values: |
         tenant:
-        {{- .Values.deployer | toYaml | nindent 10 }}
+        {{- .Values.tenant | toYaml | nindent 10 }}
         deployer:
         {{- .Values.deployer | toYaml | nindent 10 }}
         user:
