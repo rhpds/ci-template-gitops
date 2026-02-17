@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tenant-{{ .Values.tenant.name }}
+  name: tenant-{{ .Values.tenant.name | kebabcase }}
   namespace: openshift-gitops
 spec:
   project: default
