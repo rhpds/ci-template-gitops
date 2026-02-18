@@ -11,7 +11,7 @@ deployer:
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
 # Local defaults
-defaultRevision: &revision gitops-sample
+defaultRevision: &revision gitops-example
 
 ##################################
 ### Set up the infrastructure

@@ -36,7 +36,6 @@ NB: Deploying multiple tenants at once is not yet implemented.
 
 - **`bootstrap/`** - Helm chart for initial environment setup and ArgoCD ApplicationSet generation
   - **`templates/applicationset-workspace.yaml`** - ApplicationSet that generates per-user workspace apps
-  - **`templates/sample-go-app.yaml`** - Argo CD Application that deploys a sample Go application
 - **`tenant/bootstrap/`** - Helm chart to deploy all tenant resources
 - **`tenant/workspace/`** - Helm chart for workspace resources (namespaces, RBAC, etc.)
 - **`tenant/<your helm chart>/`** - Your local helm charts for tenant-specific resources
