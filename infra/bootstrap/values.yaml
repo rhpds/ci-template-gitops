@@ -35,7 +35,6 @@ webterminal:
     repoURL: https://github.com/rhpds/ocp-cluster-addons.git
     targetRevision: main
     path: webterminal
-  startingCSV: webterminal.v1.13.0
 
 # create some workspaces (namespaces)
 workspace:

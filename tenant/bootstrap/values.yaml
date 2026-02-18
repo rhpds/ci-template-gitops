@@ -4,6 +4,10 @@
 
 # These defaults are for OpenShift 4.21
 
+deployer:
+  domain: apps.cluster-guid.sandbox.opentlc.com
+  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
+
 tenant:
   name: GUID
 
@@ -11,31 +15,6 @@ tenant:
 user:
   count: 2
   prefix: user
-
-userOperator:
-  authn: htpasswd
-  git:
-    repoURL: https://github.com/rhpds/openshift-oauth-account-operator.git
-    targetRevision: main
-    path: helm
-  # HTPasswd config
-  config:
-    type: HTPasswd
-    htpasswd:
-      htpasswdSecret:
-        name: htpasswd
-
-deployer:
-  domain: apps.cluster-guid.sandbox.opentlc.com
-  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
-
-# deploy an operator
-webterminal:
-  git:
-    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
-    targetRevision: main
-    path: webterminal
-  startingCSV: webterminal.v1.13.0
 
 # create some workspaces (namespaces)
 workspace:
