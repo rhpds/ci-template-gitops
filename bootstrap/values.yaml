@@ -39,10 +39,9 @@ userOperator:
 # deploy an operator
 webterminal:
   git:
-    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
-    targetRevision: main
+    repoURL: https://github.com/rhpds/ci-template-gitops.git
+    targetRevision: *revision
     path: webterminal
-  startingCSV: webterminal.v1.13.0
 
 ##################################
 ###### Create a tenant

@@ -32,7 +32,7 @@ deployer:
 # deploy an operator
 webterminal:
   git:
-    repoURL: https://github.com/rhpds/ocp-cluster-addons.git
+    url: https://github.com/rhpds/ci-template-gitops.git
     targetRevision: main
     path: webterminal
 
