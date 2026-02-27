@@ -1,0 +1,35 @@
+{{- $labRosetta := include "labRosetta" . | fromYaml -}}
+{{ if and .Values.labs.rosetta.enabled $labRosetta.moduleVmFencing.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rosetta-lab-module-vm-fencing
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tenants
+  source:
+    repoURL: {{ $labRosetta.moduleVmFencing.git.url }}
+    targetRevision: {{ $labRosetta.moduleVmFencing.git.revision }}
+    path: {{ $labRosetta.moduleVmFencing.git.path }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: fencing
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    managedNamespaceMetadata:
+      labels:
+        openshift.io/cluster-monitoring: "true"
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

@@ -1,0 +1,53 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: csi-tolersions-job
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csi-tolersions-job
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: csi-tolersions-job
+  namespace: default
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: csi-tolersions-job
+  namespace: default
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: csi-tolersions-job
+      containers:
+      - name: csi-tolersions-job
+        image: image-registry.openshift-image-registry.svc:5000/openshift/cli
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "######################"
+          echo "# Patch the Driver with tolerations"
+          echo "######################"
+
+          oc patch -n openshift-storage \
+          --type=merge Driver openshift-storage.rbd.csi.ceph.com \
+          -p '{"spec":{"nodePlugin":{"tolerations":[{"effect":"NoExecute","key":"node.kubernetes.io/out-of-service","operator":"Equal","value":"nodeshutdown"},{"effect":"NoExecute","key":"medik8s.io/remediation","operator":"Equal","value":"self-node-remediation"}]}}}'

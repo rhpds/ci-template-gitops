@@ -1,0 +1,16 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-15"
+  name: keycloak-pgsql
+  namespace: keycloak
+spec:
+  ports:
+    - name: data
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+  selector:
+    app: keycloak-pgsql

@@ -1,6 +1,0 @@
-apiVersion: v2
-name: postgresql
-description: PostgreSQL database for Keycloak
-type: application
-version: 0.1.0
-appVersion: "16"

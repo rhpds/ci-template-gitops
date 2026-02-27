@@ -1,0 +1,20 @@
+operator:
+  name: rhods-operator
+  namespace: redhat-ods-operator
+  channel: stable
+  installPlanApproval: Automatic
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  # startingCSV: rhods-operator.x.y.x
+
+# Using sub-chart helper-status-checker
+helper-status-checker:
+  enabled: true
+  approver: false
+  checks:
+    - operatorName: rhods-operator
+      namespace:
+        name: redhat-ods-operator
+      syncwave: "1"
+      serviceAccount:
+        name: "rhoai-status-checker"

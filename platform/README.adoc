@@ -1,0 +1,209 @@
+= Keycloak SSO for OpenShift GitOps
+:toc:
+:toc-placement!:
+
+toc::[]
+
+== Purpose
+
+This repository provides a GitOps-managed Keycloak (Red Hat Build of Keycloak) deployment for OpenShift, implementing a hub-and-spoke SSO architecture.
+
+A central *hub realm* acts as the identity broker for the OpenShift cluster.
+Each tenant gets its own *spoke realm* with isolated users, federated back into the hub via OIDC identity provider brokering.
+OpenShift OAuth is configured to authenticate against the hub realm, giving all spoke-realm users access to the cluster through a single login flow.
+
+=== Architecture
+
+....
+                     ┌──────────────────────┐
+                     │   OpenShift Console   │
+                     │   (OAuth → hub realm) │
+                     └──────────┬───────────┘
+                                │
+                     ┌──────────▼───────────┐
+                     │     Hub Realm         │
+                     │  ┌─────────────────┐  │
+                     │  │ ssoadmin user    │  │
+                     │  │ OAuth client     │  │
+                     │  │ IdP: idp-alpha ──┼──┼──┐
+                     │  │ IdP: idp-beta  ──┼──┼──┼──┐
+                     │  └─────────────────┘  │  │  │
+                     └───────────────────────┘  │  │
+                                                │  │
+              ┌─────────────────────────────────┘  │
+              │                                    │
+   ┌──────────▼───────────┐         ┌──────────────▼──────┐
+   │  Spoke Realm: alpha  │         │  Spoke Realm: beta  │
+   │  user1@alpha         │         │  user1@beta         │
+   │  user2@alpha         │         │  user2@beta         │
+   │  hub-federation      │         │  hub-federation     │
+   │  (OIDC client)       │         │  (OIDC client)      │
+   └──────────────────────┘         └─────────────────────┘
+....
+
+== Usage
+
+=== Enabling Keycloak on a cluster
+
+Keycloak is enabled through the infra bootstrap values:
+
+[source,yaml]
+----
+# infra/bootstrap/values.yaml
+keycloakOperator:
+  enabled: true
+postgresql:
+  enabled: true
+keycloakResources:
+  enabled: true
+----
+
+Set `deployer.domain` to your cluster's apps domain (e.g. `apps.mycluster.example.com`).
+The Keycloak console will be available at `https://sso.<domain>`.
+
+=== Adding a tenant
+
+Enable the keycloak realm in the tenant bootstrap values and configure users:
+
+[source,yaml]
+----
+# tenant/bootstrap/values.yaml
+tenant:
+  name: alpha
+
+keycloakRealm:
+  enabled: true
+
+user:
+  count: 5        # creates user1@alpha through user5@alpha
+  prefix: user    # username prefix
+----
+
+Alternatively, specify explicit usernames:
+
+[source,yaml]
+----
+user:
+  names:
+    - alice
+    - bob
+----
+
+Users are created with random passwords stored in a Kubernetes Secret named `tenant-<realm>-credentials` in the `keycloak` namespace.
+The hub admin credentials (OAuth client secret and ssoadmin password) are stored in `hub-credentials`.
+
+Use the helper scripts in `tools/` to retrieve credentials:
+
+[source,bash]
+----
+./tools/get-credentials.sh        # show all stored passwords
+./tools/list-realm-users.sh       # list users across all realms
+./tools/validate-user-logins.sh   # test that all users can log in
+----
+
+=== SSO admin access
+
+When `ssoadmin.enabled: true` (the default), a `ssoadmin` user is created in the hub realm with `cluster-admin` privileges on OpenShift.
+Its password is randomly generated and stored in the `hub-credentials` Secret.
+
+== Charts
+
+`infra/keycloak-operator/`::
+Installs the Red Hat Build of Keycloak operator via OLM.
+Creates the `keycloak` namespace and an OperatorGroup + Subscription for the `rhbk-operator` from `redhat-operators`.
+
+`infra/keycloak-postgresql/`::
+Deploys a PostgreSQL instance as the backing database for Keycloak.
+Creates the database credentials Secret and a PersistentVolumeClaim.
+
+`infra/keycloak-resources/`::
+Configures the Keycloak instance and hub realm. Contains:
+
+* *Keycloak instance* (`instance.yaml`) -- the `Keycloak` CR that the operator reconciles
+* *TLS service and Route* -- exposes Keycloak at `sso.<domain>` with TLS reencrypt
+* *Hub realm* (`hub-realm.yaml`) -- `KeycloakRealmImport` CR for the hub realm
+* *Hub provisioner Job* (`job-hub-provisioner.yaml`) -- creates the OAuth OIDC client and ssoadmin user via the Admin API
+* *OAuth CR* (`oauth.yaml`) -- configures OpenShift to use the hub realm as an OIDC identity provider
+* *SSO admin ClusterRoleBinding* (`clusterrolebinding-ssoadmin.yaml`) -- grants `cluster-admin` to the ssoadmin user
+* *IdP and realm cleanup CronJob* (`cronjob-idp-and-realm-cleanup.yaml`) -- removes orphaned tenant resources
+
+`infra/keycloak-realm/`::
+Provisions a spoke realm for a tenant (deployed per-tenant by the tenant bootstrap). Contains:
+
+* *Realm import* (`keycloak-realm-cr.yaml`) -- `KeycloakRealmImport` CR that creates the spoke realm with a `hub-federation` OIDC client and a `user` role
+* *User provisioner Job* (`job-user-provisioner.yaml`) -- creates tenant users via the Admin API with random passwords stored in a credentials Secret
+* *IdP registrar CronJob* (`cronjob-register-idp.yaml`) -- registers the spoke realm as an OIDC IdP in the hub realm, runs every 2 minutes
+* *Sentinel ConfigMap* (`idp-registration-configmap.yaml`) -- marker used by the cleanup CronJob to detect active tenants
+
+== Details
+
+=== Custom Resources and Jobs
+
+==== KeycloakRealmImport CRs
+
+Realm imports create the realm structure (settings, clients, roles) but do *not* manage users.
+The Keycloak Operator processes realm imports asynchronously and is idempotent for realm settings and clients, but not for users -- users are only created on the initial import and skipped on subsequent applies.
+For this reason, user creation is handled separately by provisioner Jobs using the Keycloak Admin API.
+
+==== Jobs
+
+The `hub-provisioner` and `user-provisioner` Jobs run once at deploy time.
+Both include a retry loop that waits for the Keycloak Admin API to become available and for the target realm to exist (since the `KeycloakRealmImport` is processed asynchronously).
+Both are fully idempotent: they check whether each resource exists before creating or updating it, and they preserve previously generated passwords across re-runs.
+
+==== CronJobs
+
+`idp-registrar-<realm>` (per tenant):::
+Runs every 2 minutes.
+Ensures the spoke realm is registered as an OIDC identity provider in the hub realm.
+Creates or updates the IdP broker configuration idempotently.
+
+`idp-and-realm-cleanup` (platform-wide):::
+Runs every 2 minutes.
+Detects orphaned tenants by comparing hub realm IdPs against sentinel ConfigMaps.
+Uses a two-signal gate before deleting: both the sentinel ConfigMap and the `KeycloakRealmImport` CR must be absent, preventing races with in-progress tenant removals.
+Cleans up the hub IdP, the spoke realm, and the credentials Secret.
+
+=== Sync-wave plan
+
+ArgoCD sync-waves control the order of resource creation.
+Lower (more negative) values sync first.
+
+[cols="1,3,3",options="header"]
+|===
+| Wave | Resources | Purpose
+
+| -20
+| `keycloak` Namespace
+| Namespace must exist before anything else
+
+| -14
+| TLS Service
+| Internal service for Keycloak pods
+
+| -13
+| `Keycloak` instance CR
+| Operator creates the Keycloak deployment
+
+| -11
+| Hub `KeycloakRealmImport` CR, cleanup CronJob + RBAC
+| Hub realm created; cleanup CronJob deployed early so it's ready
+
+| -10
+| Hub provisioner Job + RBAC, ssoadmin ClusterRoleBinding
+| Waits for hub realm, then creates OAuth client and ssoadmin user
+
+| -9
+| Tenant `KeycloakRealmImport` CR
+| Spoke realm created with hub-federation client
+
+| -8
+| User provisioner Job + RBAC, IdP registrar RBAC, OAuth CR
+| Waits for spoke realm, then creates users; OAuth CR applied
+
+| -7
+| IdP registrar CronJob, sentinel ConfigMap
+| Registers spoke realm as IdP in hub realm
+|===
+
+Each Job includes a readiness loop that polls the Keycloak Admin API until the target realm is available, so the sync-wave ordering provides the creation sequence while the readiness loops handle the asynchronous gap between CR submission and operator reconciliation.

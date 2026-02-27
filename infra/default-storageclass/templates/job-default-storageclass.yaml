@@ -1,0 +1,89 @@
+# Ensures a default StorageClass exists on the cluster.
+#
+# Checks whether any StorageClass has the default annotation set.
+# If none is found, patches the configured SC to become the default.
+# Idempotent — skips patching if a default already exists.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-storageclass
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-50"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: default-storageclass
+  annotations:
+    argocd.argoproj.io/sync-wave: "-50"
+rules:
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: default-storageclass
+  annotations:
+    argocd.argoproj.io/sync-wave: "-50"
+subjects:
+  - kind: ServiceAccount
+    name: default-storageclass
+    namespace: openshift-gitops
+roleRef:
+  kind: ClusterRole
+  name: default-storageclass
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: default-storageclass
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-50"
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      serviceAccountName: default-storageclass
+      restartPolicy: Never
+      containers:
+        - name: set-default-sc
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+
+              SC_NAME="{{ .Values.storageClassName }}"
+
+              echo "Checking for an existing default StorageClass..."
+              DEFAULT=$(oc get storageclass \
+                -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{"\n"}{end}')
+
+              if [ -n "$DEFAULT" ]; then
+                echo "Default StorageClass already set: $DEFAULT"
+                echo "No action needed."
+                exit 0
+              fi
+
+              echo "No default StorageClass found."
+              echo "Checking if StorageClass '$SC_NAME' exists..."
+
+              if ! oc get storageclass "$SC_NAME" &>/dev/null; then
+                echo "ERROR: StorageClass '$SC_NAME' does not exist on this cluster."
+                exit 1
+              fi
+
+              echo "Setting '$SC_NAME' as the default StorageClass..."
+              oc patch storageclass "$SC_NAME" \
+                -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+              echo "Done. '$SC_NAME' is now the default StorageClass."

@@ -11,37 +11,70 @@ deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
-# call the platform component
+# call the platform layer
 platform:
   enabled: true
   git:
     path: platform/bootstrap
     <<: *git_defaults
 
-webterminal:
-  enabled: false
+defaultStorageclass:
+  enabled: true
   git:
-    path: webterminal
+    path: infra/default-storageclass
     <<: *git_defaults
 
-rhoai:
+kubevirtOperator:
   enabled: false
   git:
-    path: rhoai
+    path: infra/kubevirt-operator
     <<: *git_defaults
 
-gitlab:
+mtcOperator:
   enabled: false
-
-OAuthAccountOperator:
-  enabled: false
-  authn: htpasswd
   git:
-    path: helm
+    path: infra/mtc-operator
     <<: *git_defaults
-  # HTPasswd config
-  config:
-    type: HTPasswd
-    htpasswd:
-      htpasswdSecret:
-        name: htpasswd
+
+mtvOperator:
+  enabled: false
+  git:
+    path: infra/mtv-operator
+    <<: *git_defaults
+
+nodeHealthCheckOperator:
+  enabled: false
+  git:
+    path: infra/node-health-check-operator
+    <<: *git_defaults
+
+selfNodeRemediationOperator:
+  enabled: false
+  git:
+    path: infra/self-node-remediation-operator
+    <<: *git_defaults
+
+rhoaiOperator:
+  enabled: false
+  git:
+    path: infra/rhoai-operator
+    <<: *git_defaults
+
+deschedulerOperator:
+  enabled: false
+  git:
+    path: infra/descheduler-operator
+    <<: *git_defaults
+
+### Keycloak automation.  You probably don't need this.
+keycloakInfra:
+  enabled: false
+  git:
+    path: infra/keycloak-infra
+    <<: *git_defaults
+
+keycloakResources:
+  enabled: false
+  git:
+    path: infra/keycloak-resources
+    <<: *git_defaults

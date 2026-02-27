@@ -1,0 +1,31 @@
+{{- $labRosetta := include "labRosetta" . | fromYaml -}}
+{{ if and .Values.labs.rosetta.enabled $labRosetta.moduleVmRescheduling.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rosetta-lab-module-vm-rescheduling
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tenants
+  source:
+    repoURL: {{ $labRosetta.moduleVmRescheduling.git.url }}
+    targetRevision: {{ $labRosetta.moduleVmRescheduling.git.revision }}
+    path: {{ $labRosetta.moduleVmRescheduling.git.path }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

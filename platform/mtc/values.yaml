@@ -1,0 +1,4 @@
+mtc:
+  replicas: 1
+
+guid: "xyzzy"

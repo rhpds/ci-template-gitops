@@ -1,7 +1,6 @@
 {{ if .Values.loadtest.enabled -}}
-{{- $userCount := int .Values.user.count }}
-{{- range $index := until $userCount }}
-{{- $namespace := printf "%s-%s%d" "wksp" $.Values.user.prefix (add $index 1) }}
+{{- range $user := include "userList" . | fromJsonArray }}
+{{- $namespace := printf "wksp-%s-%s" $user ($.Values.tenant.name | lower) -}}
 ---
 kind: Deployment
 apiVersion: apps/v1

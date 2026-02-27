@@ -1,0 +1,254 @@
+= OpenShift GitOps Template
+:toc:
+:toc-placement!:
+
+toc::[]
+
+== Purpose
+
+This repository provides a three-layer GitOps structure for managing OpenShift clusters with ArgoCD.
+Each layer has a distinct responsibility and is deployed independently through its own bootstrap Application.
+
+== Three-layer structure
+
+....
+┌─────────────────────────────────────────────────────────┐
+│                      bootstrap                          │
+│          (deploys all layers — created by deployer)      │
+└────────┬──────────────────────┬─────────────────────────┘
+         │                      │
+┌────────▼────────┐   ┌────────▼────────────────────────┐
+│ bootstrap-infra │   │ bootstrap-tenant-GUID            │
+│ /infra/bootstrap│   │ /tenant/bootstrap (one per tenant│)
+│                 │   └────────┬────────────────────────┘
+│ also deploys:   │            │
+│ bootstrap-      │            ├── keycloak-realm
+│ platform        │            ├── workspace
+│                 │            └── labs (rosetta, ...)
+└────────┬────────┘
+         │
+         ├── /infra/* apps
+         └── /platform/* apps
+....
+
+=== platform/
+
+Cluster-wide operators, shared services, and platform-level configuration.
+These are deployed once per cluster regardless of how many tenants exist.
+
+[cols="1,3",options="header"]
+|===
+| Chart | Purpose
+
+| `keycloak-operator` | Installs the Red Hat Build of Keycloak operator via OLM
+| `keycloak-postgresql` | PostgreSQL backing database for Keycloak
+| `keycloak-resources` | Keycloak instance, hub realm, OAuth config, cleanup CronJob
+| `keycloak-realm` | Per-tenant spoke realm (chart lives here, deployed by tenant bootstrap)
+| `kubevirt-operator` | KubeVirt / OpenShift Virtualization operator
+| `mtc-operator` | Migration Toolkit for Containers operator
+| `mtv-operator` | Migration Toolkit for Virtualization operator
+| `node-health-check-operator` | Node Health Check operator
+| `self-node-remediation-operator` | Self Node Remediation operator
+| `rhoai-operator` | Red Hat OpenShift AI operator
+| `descheduler-operator` | Descheduler operator
+|===
+
+=== infra/
+
+Cluster infrastructure configuration — the settings and resources that operators manage.
+Each chart here corresponds to a platform operator and configures its behavior.
+
+[cols="1,3",options="header"]
+|===
+| Chart | Purpose
+
+| `descheduler` | Descheduler configuration
+| `gitlab` | GitLab instance configuration
+| `kubevirt` | KubeVirt / virtualization configuration
+| `mtc` | Migration Toolkit for Containers configuration
+| `mtv` | Migration Toolkit for Virtualization configuration
+| `node-health-check` | Node health check configuration
+| `odf` | OpenShift Data Foundation configuration
+| `rhoai` | Red Hat OpenShift AI configuration
+| `webterminal` | Web Terminal configuration
+|===
+
+=== tenant/
+
+Per-tenant applications, workspaces, and labs.
+A separate `bootstrap-tenant-GUID` Application is created by the deployer for each tenant.
+
+[cols="1,3",options="header"]
+|===
+| Chart | Purpose
+
+| `workspace` | Creates per-tenant namespaces
+| `labs/rosetta/` | Rosetta lab modules (VM placement, live migration, etc.)
+|===
+
+== Deployer integration
+
+A secondary system called the *deployer* creates bootstrap ArgoCD Applications that are not stored in this repo.
+The deployer is typically https://github.com/redhat-cop/agnosticd[AgnosticD] but could be any system that creates ArgoCD Applications.
+
+[cols="2,3",options="header"]
+|===
+| Application | Source path
+
+| `bootstrap` | Deploys everything (bootstrap-infra + all bootstrap-tenant-GUID apps)
+| `bootstrap-infra` | `/infra/bootstrap` (also deploys `bootstrap-platform` from `/platform/bootstrap`)
+| `bootstrap-tenant-GUID` | `/tenant/bootstrap` (one per tenant)
+|===
+
+=== Variable scoping
+
+Variables and values must remain scoped to their layer (`/platform/`, `/infra/`, `/tenant/`).
+The `bootstrap` app is not guaranteed to run, so settings necessary for a layer must be defined within that layer's own values — not exclusively in `/bootstrap/`.
+
+=== Usage with AgnosticV
+
+Use `core_workloads.ocp4_workload_gitops_bootstrap` to bootstrap the GitOps environment:
+
+[source,yaml]
+----
+# Repo and revision
+ocp4_workload_gitops_bootstrap_repo_url: https://github.com/rhpds/ci-template-gitops.git
+ocp4_workload_gitops_bootstrap_repo_revision: main
+
+# Application name — determines which bootstrap chart to deploy:
+#   "bootstrap"        → infra + all tenants
+#   "bootstrap-infra"  → infra only
+#   "bootstrap-tenant" → one tenant (ArgoCD app named bootstrap-tenant-GUID)
+ocp4_workload_gitops_bootstrap_application_name: "bootstrap-infra"
+
+# Helm values for the chosen bootstrap chart
+ocp4_workload_gitops_bootstrap_helm_values:
+  user:
+    count: 2
+    prefix: "user"
+----
+
+The `deployer` variables (`deployer.domain`, `deployer.apiUrl`) are set automatically by the gitops_bootstrap workload.
+
+== Returning userdata to Babylon
+
+Charts can pass data back to the deployer (Babylon) by creating ConfigMaps with the label `demo.redhat.com/userdata: "true"`.
+The deployer periodically collects all labeled ConfigMaps across the cluster and merges their `user_data` fields together non-destructively.
+This is how credentials, URLs, and other runtime-generated information are surfaced to end users through the deployer's UI.
+
+=== ConfigMap format
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: userdata-<app>-<identifier>
+  namespace: <app-namespace>
+  labels:
+    demo.redhat.com/userdata: "true"
+data:
+  user_data: '{"key": "value"}'
+----
+
+The `user_data` field must be a JSON string.
+All `user_data` values from every labeled ConfigMap are merged into a single object by the deployer, so keys must be chosen carefully to avoid collisions across apps.
+
+=== Guidelines
+
+* *Name the ConfigMap* `userdata-<app>-<identifier>` to avoid collisions (e.g. `userdata-keycloak-alpha`, `userdata-gitlab-myteam`).
+* *The label is required* — `demo.redhat.com/userdata: "true"`. Without it the deployer will not discover the ConfigMap.
+* *Use `kubectl apply`* from a Job or CronJob to create the ConfigMap at runtime, since the data (passwords, URLs) is not known at Helm template time.
+* *Merge is non-destructive* — the deployer merges all ConfigMaps together. Use nested keys scoped to your app to avoid overwriting other apps' data.
+* *Clean up on tenant removal* — if the ConfigMap is created by a Job (not managed by ArgoCD), it must be explicitly deleted during cleanup. Add deletion logic to the appropriate cleanup CronJob, or ensure the ConfigMap lives in a namespace that gets deleted with the tenant.
+
+=== Example: returning user credentials
+
+The keycloak user-provisioner Job creates a ConfigMap with per-tenant credentials:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: userdata-keycloak-alpha
+  namespace: keycloak
+  labels:
+    demo.redhat.com/userdata: "true"
+data:
+  user_data: '{"users":{"tenant-alpha":[{"username":"user1@alpha","password":"xK9m..."},{"username":"user2@alpha","password":"pQ3r..."}]}}'
+----
+
+The deployer picks this up and makes the credentials available to the end user.
+
+== Removing a tenant
+
+When the deployer deletes the parent `bootstrap-tenant-GUID` Application (e.g. `argocd app delete bootstrap-tenant-GUID`), ArgoCD cascade-deletes the entire tenant through the app-of-apps hierarchy:
+
+. ArgoCD deletes the child Applications because they are managed resources of the parent.
+. Each child Application carries the `resources-finalizer.argocd.argoproj.io` finalizer, so ArgoCD deletes all *managed resources* of each child before removing the Application object itself.
+
+The finalizer is the key mechanism: without it, deleting a parent Application would remove child Application _objects_ but orphan all their managed Kubernetes resources.
+
+== Cleanup pattern: sentinel CRs and CronJobs
+
+Some resources are created at runtime (via Jobs calling APIs or `kubectl apply`) and are not directly managed by ArgoCD.
+When a tenant is removed, ArgoCD deletes the managed Kubernetes objects but has no visibility into external state — for example, objects created inside an application's database, or resources in namespaces outside the chart's scope.
+
+This repo uses a *sentinel + CronJob* pattern to clean up that external state:
+
+=== How it works
+
+....
+  Tenant active                           Tenant removed
+  ─────────────                           ──────────────
+
+  ┌─────────────────┐                     ArgoCD deletes
+  │ Sentinel        │ ───── ArgoCD ────►  sentinel ConfigMap
+  │ ConfigMap       │      finalizer      and all managed
+  │ (managed by     │                     resources
+  │  ArgoCD)        │
+  └─────────────────┘
+          │
+          │ CronJob checks:
+          │ "does sentinel exist?"
+          │
+     ┌────▼─────┐         ┌──────────┐
+     │ Present  │         │ Absent   │
+     │ → skip   │         │ → check  │
+     └──────────┘         │   CR too │
+                          └────┬─────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │ CR also absent?     │
+                    │ Yes → clean up      │
+                    │ No  → skip (still   │
+                    │        removing)    │
+                    └─────────────────────┘
+....
+
+. A *sentinel resource* (e.g. a ConfigMap) is deployed as part of the tenant's chart and managed by ArgoCD.
+  Its only purpose is to signal that the tenant is active.
+. A platform-level *CronJob* runs on a schedule (e.g. every 2 minutes) and compares the external state against sentinel resources.
+. When a sentinel is missing, the CronJob knows the tenant has been removed.
+  Before acting, it applies a *two-signal gate*: both the sentinel _and_ a related CR must be absent.
+  This prevents races with in-progress removals where the sentinel is gone but ArgoCD is still deleting other resources.
+. Only when both signals confirm the tenant is fully gone does the CronJob clean up external state.
+
+=== Why two signals?
+
+ArgoCD does not guarantee deletion order among a chart's resources.
+If the CronJob only checked for the sentinel ConfigMap, it could fire while the tenant's other resources (CRs, Jobs) are still being finalized.
+The second signal — checking for the CR itself — ensures the CronJob waits until ArgoCD has finished removing everything before cleaning up.
+
+=== Adding cleanup for a new app
+
+To use this pattern for a new application:
+
+. Create a sentinel ConfigMap in the tenant chart with a distinctive label (e.g. `app.kubernetes.io/component: my-app-registration`).
+. Create a platform-level CronJob that:
+   * Lists external state (API objects, database entries, etc.)
+   * For each entry, checks whether the corresponding sentinel ConfigMap exists
+   * If the sentinel is missing, checks whether a related CR is also absent (two-signal gate)
+   * Only then performs cleanup
+. Give the CronJob's ServiceAccount the minimum RBAC needed: `list` on sentinels, `list` on the CR, and whatever verbs are needed for cleanup.

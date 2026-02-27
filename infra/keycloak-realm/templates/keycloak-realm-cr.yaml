@@ -1,0 +1,33 @@
+{{- $realmName := .Values.realm.name | default .Values.tenant.name | lower -}}
+{{- $displayName := .Values.realm.displayName | default .Values.tenant.name -}}
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: {{ $realmName }}
+  namespace: keycloak
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
+spec:
+  keycloakCRName: keycloak
+  realm:
+    realm: {{ $realmName }}
+    displayName: {{ $displayName }}
+    enabled: {{ .Values.realm.enabled }}
+    sslRequired: external
+    loginWithEmailAllowed: false
+    clients:
+      - clientId: hub-federation
+        enabled: true
+        clientAuthenticatorType: client-secret
+        secret: hub-federation-secret
+        publicClient: false
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: false
+        redirectUris:
+          - "https://sso.{{ .Values.deployer.domain }}/realms/{{ .Values.hub.realmName }}/broker/idp-{{ $realmName }}/endpoint/*"
+        protocol: openid-connect
+    roles:
+      realm:
+        - name: user
+          description: "Default user role"
+    users: []

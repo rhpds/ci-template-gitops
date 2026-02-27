@@ -9,10 +9,22 @@ deployer:
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
 tenant:
-  name: GUID
-  user: 
+  name: xyzzy
+  user:
+    enabled: true
     prefix: user
+    count: 5
+    names: []
+    password: openshift
     # count: 2 # if we're deploying an event
+
+# create some workspaces (namespaces)
+workspace:
+  enabled: true
+  git:
+    url: https://github.com/rhpds/ci-template-gitops.git
+    revision: main
+    path: tenant/workspace
 
 # create an app in each namespace
 #  who doesn't need a loadtester?
@@ -22,10 +34,20 @@ loadtest:
   duration: 1000
   url: https://example.com/your/app
 
-# create some workspaces (namespaces)
-workspace:
+# enable/disable entire lab suites
+labs:
+  rosetta:
+    enabled: false
+
+# Lab module values are in separate files:
+#   values-lab-rosetta.yaml    - Rosetta lab modules
+# Future labs follow the same pattern:
+#   values-lab-<name>.yaml
+
+# create a keycloak realm for this tenant
+keycloakRealm:
   enabled: false
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
     revision: main
-    path: workspace
+    path: infra/keycloak-realm

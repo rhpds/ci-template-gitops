@@ -1,0 +1,11 @@
+operator:
+  channel: stable-v26.0
+  installPlanApproval: Automatic
+
+database:
+  secretName: keycloak-db-credentials
+  name: keycloak
+  username: keycloak
+
+storage:
+  size: 50Gi

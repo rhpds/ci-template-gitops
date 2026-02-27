@@ -1,0 +1,16 @@
+deployer:
+  domain: cluster.example.com
+
+hub:
+  realm:
+    name: hub
+    displayName: OpenShift
+
+oauth:
+  enabled: true
+  clientId: openshift-oauth
+
+ssoadmin:
+  enabled: true
+  username: ssoadmin
+  email: ssoadmin@example.com

@@ -1,0 +1,28 @@
+{{ if .Values.selfNodeRemediationOperator.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: self-node-remediation-operator
+  namespace: openshift-gitops
+spec:
+  project: infra
+  source:
+    repoURL: {{ .Values.selfNodeRemediationOperator.git.repoURL }}
+    targetRevision: {{ .Values.selfNodeRemediationOperator.git.targetRevision }}
+    path: {{ .Values.selfNodeRemediationOperator.git.path }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

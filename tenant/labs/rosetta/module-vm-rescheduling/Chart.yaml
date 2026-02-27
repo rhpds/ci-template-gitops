@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rosetta-lab-module-vm-rescheduling
+description: Rosetta lab resources for Module "VM Rescheduling"
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

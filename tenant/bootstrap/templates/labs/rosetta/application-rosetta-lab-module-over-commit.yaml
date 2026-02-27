@@ -1,0 +1,32 @@
+{{- $labRosetta := include "labRosetta" . | fromYaml -}}
+{{ if and .Values.labs.rosetta.enabled $labRosetta.moduleOverCommit.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rosetta-lab-module-over-commit
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tenants
+  source:
+    repoURL: {{ $labRosetta.moduleOverCommit.git.url }}
+    targetRevision: {{ $labRosetta.moduleOverCommit.git.revision }}
+    path: {{ $labRosetta.moduleOverCommit.git.path }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: over-commit
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

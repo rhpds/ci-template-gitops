@@ -1,0 +1,6 @@
+apiVersion: v2
+name: self-node-remediation-operator
+description: Self Node Remediation operator installation
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

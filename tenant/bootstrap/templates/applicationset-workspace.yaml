@@ -3,29 +3,32 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: workspace
+  name: tenant-{{ .Values.tenant.name | lower }}-workspace
   namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   generators:
   - list:
       elements:
-{{- $userCount := int .Values.user.count }}
-{{- range $index := until $userCount }}
-      - user: {{ $.Values.user.prefix }}{{ add $index 1}}
+{{- range $user := include "userList" . | fromJsonArray }}
+      - user: {{ $user }}
 {{- end }}
   template:
     metadata:
-      name: workspace-{{- "{{" }} user {{- " }}" }}
+      name: tenant-{{ .Values.tenant.name | lower }}-workspace-{{- "{{" }} user {{- " }}" }}
       namespace: openshift-gitops
     spec:
-      project: default
+      project: tenants
       source:
         repoURL: {{ .Values.workspace.git.url }}
         targetRevision: {{ .Values.workspace.git.revision }}
         path: {{ .Values.workspace.git.path }}
         helm:
           values: |
-            username: '{{- "{{" }} user {{- " }}" }}'
+            username: '{{- "{{" }} user {{- " }}" }}@{{ .Values.tenant.name }}'
+            tenant:
+              name: {{ .Values.tenant.name }}
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:

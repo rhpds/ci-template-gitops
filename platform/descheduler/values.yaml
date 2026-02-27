@@ -1,0 +1,3 @@
+descheduler:
+  replicas: 1
+  enable_machineconfig: false
