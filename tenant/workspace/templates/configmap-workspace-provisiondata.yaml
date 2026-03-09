@@ -1,0 +1,15 @@
+{{- $tenantName := .Values.tenant.name | lower -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-{{ $tenantName }}-workspace-provisiondata
+  namespace: openshift-gitops
+  labels:
+    demo.redhat.com/tenant-{{ $tenantName }}: "true"
+  annotations:
+    argocd.argoproj.io/sync-options: "Prune=true"
+data:
+  provision_data:
+    namespace: wksp-{{ .Values.username | replace "@" "-" | lower }}
+{{- end }}

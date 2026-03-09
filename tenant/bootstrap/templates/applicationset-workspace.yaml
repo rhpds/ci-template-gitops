@@ -1,3 +1,4 @@
+{# Creates workspaces for 1 or more users in the tenant #}
 {{ if .Values.workspace.enabled -}}
 ---
 apiVersion: argoproj.io/v1alpha1

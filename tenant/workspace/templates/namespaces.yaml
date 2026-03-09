@@ -1,3 +1,4 @@
+{# namespace names must be sanitized #}
 {{- $nsName := .Values.username | replace "@" "-" | lower -}}
 ---
 apiVersion: v1
