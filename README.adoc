@@ -31,19 +31,40 @@ Each layer has a distinct responsibility and is deployed independently through i
          └── /platform/* apps
 ....
 
-=== platform/
+=== Sync-wave summary
 
-Cluster-wide operators, shared services, and platform-level configuration.
+Sync-waves are annotations on *resources*, never on Applications or ApplicationSets.
+The ArgoCD default for un-annotated resources is `0`.
+
+[cols="1,1,3",options="header"]
+|===
+| Layer | Wave range | Purpose
+
+| infra | `-50` | Cluster-wide infra requirements (e.g. default StorageClass)
+| infra | `-20` | Operators, their namespaces and prerequisites
+| infra | `-10` | Operator Custom Resources
+| platform | `-10` | Custom resources unique to your lab
+| platform | `0` | ArgoCD default (un-annotated resources)
+| platform | `1` to `10` | Further resources and patches
+| tenant | `0` | ArgoCD default (un-annotated resources)
+| tenant | `1` to `100` | Per-tenant and per-user resources and patches
+|===
+
+Keycloak occupies the deep negative range (`-20` to `-7`) in infra so that authentication infrastructure is fully ready before platform or tenant resources deploy.
+Use `SkipDryRunOnMissingResource=true` on CRs whose CRDs are installed by an operator, since the CRD may not exist during dry-run.
+
+=== infra/
+
+AppProjects are created here to define the infra/platform/tenant layers pattern.
+
+Operator installation (Subscriptions, OperatorGroups via OLM) and infrastructure setup.
 These are deployed once per cluster regardless of how many tenants exist.
+
 
 [cols="1,3",options="header"]
 |===
 | Chart | Purpose
 
-| `keycloak-operator` | Installs the Red Hat Build of Keycloak operator via OLM
-| `keycloak-postgresql` | PostgreSQL backing database for Keycloak
-| `keycloak-resources` | Keycloak instance, hub realm, OAuth config, cleanup CronJob
-| `keycloak-realm` | Per-tenant spoke realm (chart lives here, deployed by tenant bootstrap)
 | `kubevirt-operator` | KubeVirt / OpenShift Virtualization operator
 | `mtc-operator` | Migration Toolkit for Containers operator
 | `mtv-operator` | Migration Toolkit for Virtualization operator
@@ -51,12 +72,50 @@ These are deployed once per cluster regardless of how many tenants exist.
 | `self-node-remediation-operator` | Self Node Remediation operator
 | `rhoai-operator` | Red Hat OpenShift AI operator
 | `descheduler-operator` | Descheduler operator
+| `default-storageclass` | Sets default StorageClass if none exists
+| `keycloak-infra` | Keycloak operator, namespace, and PostgreSQL database
+| `keycloak-resources` | Keycloak instance, hub realm, OAuth config, cleanup CronJob
+| `keycloak-realm` | Per-tenant spoke realm (chart lives here, deployed by tenant bootstrap)
 |===
 
-=== infra/
+==== /infra Sync-waves
 
-Cluster infrastructure configuration — the settings and resources that operators manage.
-Each chart here corresponds to a platform operator and configures its behavior.
+.Example sync-wave setting of '-50'
+----
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-storageclass
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-50"
+----
+
+Sync-waves are annotations for each resource, NOT Applications and ApplicationSets.  Do not put Sync Wave anootations in your Application or AppSet definitions.
+
+The ArgoCD default sync-wave for un-annotated resources is '0'.
+
+These *very early* sync-waves (-50 to -10) establish the underlying infrastructure for the platform and tenants.
+
+Put your own operators and their dependencies in -10 to -1.
+
+Infra charts use negative sync-waves to establish dependencies before platform resources can be applied.
+
+[cols="1,3",options="header"]
+|===
+| Wave | Resources
+| `-50` | /infra layer Cluster-wide infra requirements.  E.g., default StorageClass
+| `-20` | /infra layer Operators, their Namespaces and other operator prerequisites
+| `-10` | /infra layer Operator Custom Resources
+|===
+
+Keycloak charts occupy the deep negative range (`-20` to `-7`) so that authentication infrastructure is fully ready before platform CRs or tenant workloads deploy.
+Operator Subscriptions use low positive waves (`1` to `3`) since they only need a namespace to exist.
+
+=== platform/
+
+Cluster-wide resources that USE those operators — CRs, patches, and configurations.
+Each chart here corresponds to an infra operator and configures its behavior.
 
 [cols="1,3",options="header"]
 |===
@@ -73,6 +132,21 @@ Each chart here corresponds to a platform operator and configures its behavior.
 | `webterminal` | Web Terminal configuration
 |===
 
+==== Sync-waves
+
+Platform charts use a mix of negative waves (for prerequisite patches) and positive waves (for CRs that depend on operators being ready).
+
+[cols="1,3",options="header"]
+|===
+| Wave | Resources
+| `-10` | Sync-waves for your custom resources that are unique to your lab
+| `0` | ARGOCD DEFAULT SYNC-WAVE
+| `1-10` | Further resources and patches
+|===
+
+Most operator CRs land at wave `3` — by this point the corresponding operator Subscription (deployed by infra) has had time to install.
+Use `SkipDryRunOnMissingResource=true` on CRs whose CRDs are installed by an operator, since the CRD may not exist during dry-run.
+
 === tenant/
 
 Per-tenant applications, workspaces, and labs.
@@ -85,6 +159,24 @@ A separate `bootstrap-tenant-GUID` Application is created by the deployer for ea
 | `workspace` | Creates per-tenant namespaces
 | `labs/rosetta/` | Rosetta lab modules (VM placement, live migration, etc.)
 |===
+
+==== Sync-waves
+
+Tenant charts use higher positive waves since they depend on both infra operators and platform CRs being ready.
+
+[cols="1,3",options="header"]
+|===
+| Wave | Resources
+
+| `0` | ARGOCD DEFAULT SYNC-WAVE
+| `1-100` | Per-tenant and per-user resources and patches
+| `2` | Example: Loadtest Deployment, stress-test Namespace
+| `3` | Example: Stress-test ConfigMap and Deployment
+| `10` | All VirtualMachine resources (lab modules)
+|===
+
+VMs use wave `10` to ensure KubeVirt infrastructure (operator + HyperConverged CR + datasources) is fully available.
+All VM templates include `SkipDryRunOnMissingResource=true` since the VirtualMachine CRD is installed by the KubeVirt operator.
 
 == Deployer integration
 
@@ -130,11 +222,20 @@ ocp4_workload_gitops_bootstrap_helm_values:
 
 The `deployer` variables (`deployer.domain`, `deployer.apiUrl`) are set automatically by the gitops_bootstrap workload.
 
-== Returning userdata to Babylon
+== Returning provision data to the deployer
 
-Charts can pass data back to the deployer (Babylon) by creating ConfigMaps with the label `demo.redhat.com/userdata: "true"`.
-The deployer periodically collects all labeled ConfigMaps across the cluster and merges their `user_data` fields together non-destructively.
-This is how credentials, URLs, and other runtime-generated information are surfaced to end users through the deployer's UI.
+ConfigMaps in the `openshift-gitops` namespace pass data back to the deployer system.
+The label key encodes the layer and tenant GUID.
+
+=== Label conventions
+
+[cols="2,2,2",options="header"]
+|===
+| Layer | Label | ConfigMap name
+
+| Tenant | `demo.redhat.com/tenant-<GUID>: "true"` | `tenant-<GUID>-userdata-keycloak`
+| Infra  | `demo.redhat.com/infra: "true"` | `infra-userdata-keycloak`
+|===
 
 === ConfigMap format
 
@@ -143,43 +244,51 @@ This is how credentials, URLs, and other runtime-generated information are surfa
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: userdata-<app>-<identifier>
-  namespace: <app-namespace>
+  name: tenant-<GUID>-userdata-keycloak
+  namespace: openshift-gitops
   labels:
-    demo.redhat.com/userdata: "true"
+    demo.redhat.com/tenant-<GUID>: "true"
 data:
-  user_data: '{"key": "value"}'
+  provision_data: |
+    <your data here>
+    users:
+      user1:
+        username: user1@<GUID>
+      user2:
+        username: user2@<GUID>
 ----
-
-The `user_data` field must be a JSON string.
-All `user_data` values from every labeled ConfigMap are merged into a single object by the deployer, so keys must be chosen carefully to avoid collisions across apps.
 
 === Guidelines
 
-* *Name the ConfigMap* `userdata-<app>-<identifier>` to avoid collisions (e.g. `userdata-keycloak-alpha`, `userdata-gitlab-myteam`).
-* *The label is required* — `demo.redhat.com/userdata: "true"`. Without it the deployer will not discover the ConfigMap.
-* *Use `kubectl apply`* from a Job or CronJob to create the ConfigMap at runtime, since the data (passwords, URLs) is not known at Helm template time.
-* *Merge is non-destructive* — the deployer merges all ConfigMaps together. Use nested keys scoped to your app to avoid overwriting other apps' data.
-* *Clean up on tenant removal* — if the ConfigMap is created by a Job (not managed by ArgoCD), it must be explicitly deleted during cleanup. Add deletion logic to the appropriate cleanup CronJob, or ensure the ConfigMap lives in a namespace that gets deleted with the tenant.
+* *Tenant ConfigMaps are managed by ArgoCD* — the tenant bootstrap creates an empty ConfigMap, and the user-provisioner Job fills in the data. When the tenant is deleted, ArgoCD automatically cleans up the ConfigMap via the resources finalizer.
+* *Infra ConfigMaps are created at runtime* by the hub-provisioner Job. They persist for the cluster's lifetime.
+* *Use `kubectl apply`* from a Job to populate ConfigMap data at runtime, since the data is not known at Helm template time.
+* *Add `RespectIgnoreDifferences`* to the deployer's tenant Application so ArgoCD does not reset the data field populated by the Job.
 
-=== Example: returning user credentials
+=== Example: tenant user provisioning
 
-The keycloak user-provisioner Job creates a ConfigMap with per-tenant credentials:
+The keycloak user-provisioner Job populates the ConfigMap with per-tenant usernames:
 
 [source,yaml]
 ----
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: userdata-keycloak-alpha
-  namespace: keycloak
+  name: tenant-alpha-userdata-keycloak
+  namespace: openshift-gitops
   labels:
-    demo.redhat.com/userdata: "true"
+    demo.redhat.com/tenant-alpha: "true"
 data:
-  user_data: '{"users":{"tenant-alpha":[{"username":"user1@alpha","password":"xK9m..."},{"username":"user2@alpha","password":"pQ3r..."}]}}'
+  provision_data: |
+    <your YAML here>
+    users:
+      user1:
+        username: user1@alpha
+      user2:
+        username: user2@alpha
 ----
 
-The deployer picks this up and makes the credentials available to the end user.
+The deployer picks this up and makes the data available to the end user.
 
 == Removing a tenant
 
@@ -190,14 +299,25 @@ When the deployer deletes the parent `bootstrap-tenant-GUID` Application (e.g. `
 
 The finalizer is the key mechanism: without it, deleting a parent Application would remove child Application _objects_ but orphan all their managed Kubernetes resources.
 
-== Cleanup pattern: sentinel CRs and CronJobs
+[appendix]
+== Keycloak
+
+=== Architecture
+
+The Keycloak deployment spans all three layers:
+
+* *infra* — `keycloak-infra` installs the operator, namespace, and PostgreSQL database. `keycloak-resources` creates the Keycloak instance, hub realm, OAuth integration, and the cleanup CronJob.
+* *tenant* — each tenant's bootstrap deploys `keycloak-realm`, which creates a spoke realm, provisions users, and registers an IdP back to the hub realm.
+* *platform* — the `idp-and-realm-cleanup` CronJob (deployed by `keycloak-resources`) watches for removed tenants and cleans up external Keycloak state.
+
+=== Cleanup pattern: sentinel CRs and CronJobs
 
 Some resources are created at runtime (via Jobs calling APIs or `kubectl apply`) and are not directly managed by ArgoCD.
-When a tenant is removed, ArgoCD deletes the managed Kubernetes objects but has no visibility into external state — for example, objects created inside an application's database, or resources in namespaces outside the chart's scope.
+When a tenant is removed, ArgoCD deletes the managed Kubernetes objects but has no visibility into external state — for example, Keycloak realms, IdP registrations, and organization entries created via the admin API.
 
 This repo uses a *sentinel + CronJob* pattern to clean up that external state:
 
-=== How it works
+==== How it works
 
 ....
   Tenant active                           Tenant removed
@@ -227,21 +347,21 @@ This repo uses a *sentinel + CronJob* pattern to clean up that external state:
                     └─────────────────────┘
 ....
 
-. A *sentinel resource* (e.g. a ConfigMap) is deployed as part of the tenant's chart and managed by ArgoCD.
-  Its only purpose is to signal that the tenant is active.
-. A platform-level *CronJob* runs on a schedule (e.g. every 2 minutes) and compares the external state against sentinel resources.
+. A *sentinel resource* (a ConfigMap labeled `app.kubernetes.io/component: idp-registration`) is deployed by the `keycloak-realm` chart and managed by ArgoCD.
+  Its only purpose is to signal that the tenant's realm is active.
+. The `idp-and-realm-cleanup` CronJob (deployed by `keycloak-resources`) runs every 2 minutes and compares Keycloak state against sentinel ConfigMaps.
 . When a sentinel is missing, the CronJob knows the tenant has been removed.
-  Before acting, it applies a *two-signal gate*: both the sentinel _and_ a related CR must be absent.
+  Before acting, it applies a *two-signal gate*: both the sentinel _and_ the corresponding KeycloakRealmImport CR must be absent.
   This prevents races with in-progress removals where the sentinel is gone but ArgoCD is still deleting other resources.
-. Only when both signals confirm the tenant is fully gone does the CronJob clean up external state.
+. Only when both signals confirm the tenant is fully gone does the CronJob clean up the spoke realm, IdP registration, organization, and credentials secret from the hub.
 
-=== Why two signals?
+==== Why two signals?
 
 ArgoCD does not guarantee deletion order among a chart's resources.
-If the CronJob only checked for the sentinel ConfigMap, it could fire while the tenant's other resources (CRs, Jobs) are still being finalized.
+If the CronJob only checked for the sentinel ConfigMap, it could fire while the tenant's KeycloakRealmImport and other resources are still being finalized.
 The second signal — checking for the CR itself — ensures the CronJob waits until ArgoCD has finished removing everything before cleaning up.
 
-=== Adding cleanup for a new app
+==== Adding cleanup for a new app
 
 To use this pattern for a new application:
 
