@@ -50,9 +50,7 @@ Keycloak is enabled through the infra bootstrap values:
 [source,yaml]
 ----
 # infra/bootstrap/values.yaml
-keycloakOperator:
-  enabled: true
-postgresql:
+keycloakInfra:
   enabled: true
 keycloakResources:
   enabled: true
@@ -108,15 +106,13 @@ Its password is randomly generated and stored in the `hub-credentials` Secret.
 
 == Charts
 
-`infra/keycloak-operator/`::
+`infra/keycloak/keycloak-infra/`::
 Installs the Red Hat Build of Keycloak operator via OLM.
 Creates the `keycloak` namespace and an OperatorGroup + Subscription for the `rhbk-operator` from `redhat-operators`.
-
-`infra/keycloak-postgresql/`::
 Deploys a PostgreSQL instance as the backing database for Keycloak.
 Creates the database credentials Secret and a PersistentVolumeClaim.
 
-`infra/keycloak-resources/`::
+`infra/keycloak/keycloak-resources/`::
 Configures the Keycloak instance and hub realm. Contains:
 
 * *Keycloak instance* (`instance.yaml`) -- the `Keycloak` CR that the operator reconciles
@@ -127,7 +123,7 @@ Configures the Keycloak instance and hub realm. Contains:
 * *SSO admin ClusterRoleBinding* (`clusterrolebinding-ssoadmin.yaml`) -- grants `cluster-admin` to the ssoadmin user
 * *IdP and realm cleanup CronJob* (`cronjob-idp-and-realm-cleanup.yaml`) -- removes orphaned tenant resources
 
-`infra/keycloak-realm/`::
+`infra/keycloak/keycloak-realm/`::
 Provisions a spoke realm for a tenant (deployed per-tenant by the tenant bootstrap). Contains:
 
 * *Realm import* (`keycloak-realm-cr.yaml`) -- `KeycloakRealmImport` CR that creates the spoke realm with a `hub-federation` OIDC client and a `user` role

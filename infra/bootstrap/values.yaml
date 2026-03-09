@@ -11,7 +11,7 @@ deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
-# call the platform layer
+# call the platform layer, you need this.
 platform:
   enabled: true
   git:
@@ -70,11 +70,11 @@ deschedulerOperator:
 keycloakInfra:
   enabled: false
   git:
-    path: infra/keycloak-infra
+    path: infra/keycloak/keycloak-infra
     <<: *git_defaults
 
 keycloakResources:
   enabled: false
   git:
-    path: infra/keycloak-resources
+    path: infra/keycloak/keycloak-resources
     <<: *git_defaults

@@ -50,4 +50,4 @@ keycloakRealm:
   git:
     url: https://github.com/rhpds/ci-template-gitops.git
     revision: main
-    path: infra/keycloak-realm
+    path: infra/keycloak/keycloak-realm

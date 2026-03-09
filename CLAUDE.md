@@ -27,12 +27,12 @@ ConfigMaps in the `openshift-gitops` namespace pass data back to the deployer sy
 
 - Tenant userdata: label `demo.redhat.com/tenant-<GUID>: "true"`
   - Name: `tenant-<realm>-userdata-keycloak`
-  - Created by: user-provisioner Job (infra/keycloak-realm)
-  - Cleaned up by: idp-and-realm-cleanup CronJob (infra/keycloak-resources)
+  - Created by: user-provisioner Job (infra/keycloak/keycloak-realm)
+  - Cleaned up by: idp-and-realm-cleanup CronJob (infra/keycloak/keycloak-resources)
 
 - Infra userdata: label `demo.redhat.com/infra: "true"`
   - Name: `infra-userdata-keycloak`
-  - Created by: hub-provisioner Job (infra/keycloak-resources)
+  - Created by: hub-provisioner Job (infra/keycloak/keycloak-resources)
 
 Data format (YAML in the `provision_data` field):
 
@@ -47,9 +47,9 @@ users:
 All data is merged together by the deployer, non-destructively.
 
 ## infra/ charts
-/keycloak-infra
-/keycloak-resources
-/keycloak-realm (referenced by tenant bootstrap)
+/keycloak/keycloak-infra
+/keycloak/keycloak-resources
+/keycloak/keycloak-realm (referenced by tenant bootstrap)
 /kubevirt-operator
 /mtc-operator
 /mtv-operator
