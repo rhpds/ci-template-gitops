@@ -250,12 +250,10 @@ metadata:
     demo.redhat.com/tenant-<GUID>: "true"
 data:
   provision_data: |
-    <your data here>
     users:
       user1:
         username: user1@<GUID>
-      user2:
-        username: user2@<GUID>
+        urlOfImportantService: <url>
 ----
 
 === Guidelines
