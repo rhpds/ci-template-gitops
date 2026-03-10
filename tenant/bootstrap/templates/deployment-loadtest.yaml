@@ -1,12 +1,9 @@
 {{ if .Values.loadtest.enabled -}}
-{{- range $user := include "userList" . | fromJsonArray }}
-{{- $namespace := printf "wksp-%s-%s" $user ($.Values.tenant.name | lower) -}}
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: loadtest
-  namespace: {{ $namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
@@ -48,5 +45,4 @@ spec:
       maxSurge: 25%
   revisionHistoryLimit: 10
   progressDeadlineSeconds: 600
-{{- end }}
 {{- end }}

@@ -1,4 +1,6 @@
 {{/*
+  USED ONLY WHEN tenant.user.keycloakEnabled=true
+
   userList — builds a combined JSON array of all tenant usernames.
 
   Both sources are additive (not mutually exclusive):

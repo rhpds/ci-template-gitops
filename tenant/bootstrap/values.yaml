@@ -4,6 +4,11 @@
 
 # These defaults are for OpenShift 4.21
 
+# defaults
+default_settings: &git_defaults
+  repoURL: https://github.com/rhpds/ci-template-gitops.git
+  targetRevision: main
+
 deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
@@ -11,7 +16,8 @@ deployer:
 tenant:
   name: xyzzy
   user:
-    enabled: true
+    name: agv-generated-username
+    keycloakEnabled: false
     prefix: user
     count: 5
     names: []
@@ -22,12 +28,11 @@ tenant:
 workspace:
   enabled: true
   git:
-    url: https://github.com/rhpds/ci-template-gitops.git
-    revision: main
+    <<: *git_defaults
     path: tenant/workspace
 
-# create an app in each namespace
-#  who doesn't need a loadtester?
+# create an app in a namespace
+# who doesn't need a loadtester?
 loadtest:
   enabled: false
   requestsPerSecond: 0 #off
@@ -48,6 +53,5 @@ labs:
 keycloakRealm:
   enabled: false
   git:
-    url: https://github.com/rhpds/ci-template-gitops.git
-    revision: main
+    <<: *git_defaults
     path: infra/keycloak/keycloak-realm

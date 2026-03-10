@@ -11,4 +11,6 @@ metadata:
     argocd.argoproj.io/sync-options: "Prune=true"
 data:
   provision_data:
-    namespace: wksp-{{ .Values.username | replace "@" "-" | lower }}
+    users:
+      {{ .Values.tenant.name | lower }}:
+        namespace: wksp-{{ .Values.username | replace "@" "-" | lower }}
