@@ -1,9 +1,12 @@
 {{ if .Values.loadtest.enabled -}}
+{{- $nsUsername := .Values.tenant.user.name | replace "@" "-" | lower -}}
+{{- $nsName := printf "%s-%s" .Values.namespace.namePrefix $nsUsername -}}
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: loadtest
+  namespace: {{ $nsName }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:

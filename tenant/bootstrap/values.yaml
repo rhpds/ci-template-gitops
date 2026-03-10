@@ -17,19 +17,11 @@ tenant:
   name: xyzzy
   user:
     name: agv-generated-username
-    keycloakEnabled: false
-    prefix: user
-    count: 5
-    names: []
     password: openshift
-    # count: 2 # if we're deploying an event
+    keycloakEnabled: false
 
-# create some workspaces (namespaces)
-workspace:
-  enabled: false
-  git:
-    <<: *git_defaults
-    path: tenant/workspace
+namespace:
+  namePrefix: vms
 
 # create an app in a namespace
 # who doesn't need a loadtester?
@@ -39,19 +31,9 @@ loadtest:
   duration: 1000
   url: https://example.com/your/app
 
-# enable/disable entire lab suites
 labs:
   rosetta:
     enabled: false
 
-# Lab module values are in separate files:
-#   values-lab-rosetta.yaml    - Rosetta lab modules
-# Future labs follow the same pattern:
-#   values-lab-<name>.yaml
-
-# create a keycloak realm for this tenant
 keycloakRealm:
   enabled: false
-  git:
-    <<: *git_defaults
-    path: infra/keycloak/keycloak-realm
