@@ -12,4 +12,3 @@ metadata:
 data:
   provision_data:
     namespace: wksp-{{ .Values.username | replace "@" "-" | lower }}
-{{- end }}
