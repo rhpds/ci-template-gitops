@@ -34,7 +34,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: "Prune=true"
 data:
-  provision_data:
+  provision_data: |
     users:
       {{ .Values.tenant.name | lower }}:
         namespace: {{ $nsName }}
