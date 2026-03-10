@@ -1,5 +1,3 @@
-{{- if .Values.keycloakRealm.enabled -}}
-{{- $realmName := .Values.tenant.name | lower -}}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -14,4 +12,3 @@ data:
   provision_data: |
     openshift_console_url: https://console-openshift-console.{{ .Values.deployer.domain }}
     openshift_gitops_url: https://openshift-gitops-server-openshift-gitops.{{ .Values.deployer.domain }}
-{{- end }}
