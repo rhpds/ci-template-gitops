@@ -14,9 +14,9 @@ deployer:
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
 tenant:
-  name: xyzzy
+  name: GUID
   user:
-    name: agv-generated-username
+    name: agv-generated-username@GUID
     password: openshift
     keycloakEnabled: false
 

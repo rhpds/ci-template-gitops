@@ -36,5 +36,5 @@ metadata:
 data:
   provision_data: |
     users:
-      {{ .Values.tenant.name | lower }}:
+      {{ .Values.tenant.user.name | lower }}:
         namespace: {{ $nsName }}
