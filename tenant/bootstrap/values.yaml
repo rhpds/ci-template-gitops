@@ -22,4 +22,4 @@ labs:
     enabled: true
     git:
       path: ocpOps
-      settings: *git_defaults
+      <<: *git_defaults
