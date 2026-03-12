@@ -1,21 +1,25 @@
-{{- $labRosetta := include "labRosetta" . | fromYaml -}}
-{{ if and .Values.labs.rosetta.enabled $labRosetta.moduleAffinity.enabled -}}
+{{ if and .Values.labs.ocpOps.enabled -}}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: rosetta-lab-module-affinity
+  name: lab-ocpops-{{ .Values.tenant.name }}
   namespace: openshift-gitops
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: tenants
   source:
-    repoURL: {{ $labRosetta.moduleAffinity.git.url }}
-    targetRevision: {{ $labRosetta.moduleAffinity.git.revision }}
-    path: {{ $labRosetta.moduleAffinity.git.path }}
+    repoURL: {{ .Values.labs.ocpOps.git.repoURL }}
+    targetRevision: {{ .Values.labs.ocpOps.git.targetRevision }}
+    path: {{ .Values.labs.ocpOps.git.path }}
+    helm:
+      values: |
+        tenant:
+        {{- .Values.tenant | toYaml | nindent 12 }}
+        ocpOps:
+        {{- .Values.labs.ocpOps | toYaml | nindent 12 }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: affinity
   syncPolicy:
     automated:
       enabled: true
@@ -23,9 +27,6 @@ spec:
       - CreateNamespace=true
       - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true
-    managedNamespaceMetadata:
-      labels:
-        openshift.io/cluster-monitoring: "true"
     retry:
       limit: 10
       backoff:

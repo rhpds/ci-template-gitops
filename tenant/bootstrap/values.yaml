@@ -1,8 +1,6 @@
-# Default values for bootstrap.
+# Default values for tenant/bootstrap.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-
-# These defaults are for OpenShift 4.21
 
 # defaults
 default_settings: &git_defaults
@@ -10,30 +8,18 @@ default_settings: &git_defaults
   targetRevision: main
 
 deployer:
-  domain: apps.cluster-guid.sandbox.opentlc.com
-  apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
+  domain: apps.cluster-guid.example.com
+  apiUrl: https://api.cluster-guid.example.com:6443
+  guid: GUID
 
 tenant:
   name: GUID
   user:
-    name: agv-generated-username@GUID
-    password: openshift
-    keycloakEnabled: false
-
-namespace:
-  namePrefix: vms
-
-# create an app in a namespace
-# who doesn't need a loadtester?
-loadtest:
-  enabled: false
-  requestsPerSecond: 0 #off
-  duration: 1000
-  url: https://example.com/your/app
+    name: USERNAME
 
 labs:
-  rosetta:
-    enabled: false
-
-keycloakRealm:
-  enabled: false
+  ocpOps:
+    enabled: true
+    git:
+      path: ocpOps
+      settings: *git_defaults

@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-{{ include "ocpOps.tenantName" . }}-ocpops-balance-provisiondata
+  namespace: openshift-gitops
+  labels:
+    demo.redhat.com/tenant-{{ include "ocpOps.tenantName" . }}: "true"
+  annotations:
+    argocd.argoproj.io/sync-options: "Prune=true"
+data:
+  provision_data:
+    users:
+      {{ include "ocpOps.tenantName" . }}:
+        namespace: {{ include "ocpOps.balanceNamespace" . }}

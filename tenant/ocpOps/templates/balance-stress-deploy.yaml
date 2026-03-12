@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-test-{{ include "ocpOps.userName" . }}
+  namespace: {{ include "ocpOps.balanceNamespace" . }}
+  labels:
+    app: stress-test-{{ include "ocpOps.userName" . }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: stress-test-{{ include "ocpOps.userName" . }}
+  template:
+    metadata:
+      labels:
+        app: stress-test-{{ include "ocpOps.userName" . }}
+    spec:
+      containers:
+      - name: stress
+        image: https://quay.io/rh_ee_mmayeras/stress:latest
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: stress-config
+        resources:
+          requests:
+            cpu: "2"
+            memory: "1Gi"
+      restartPolicy: Always
