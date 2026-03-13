@@ -21,6 +21,7 @@ myapp:
   git:
     path: tenant/myapp
     <<: *git_defaults
+  namespace: myapp-USERNAME
 
 myotherapp:
   namespace: myotherapp-USERNAME

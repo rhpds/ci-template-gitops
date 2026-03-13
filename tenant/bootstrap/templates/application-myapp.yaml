@@ -19,6 +19,7 @@ spec:
         {{- .Values.myapp | toYaml | nindent 12 }}
   destination:
     server: https://kubernetes.default.svc
+    namespace: {{ .Values.myapp.namespace }}
   syncPolicy:
     automated:
       enabled: true
