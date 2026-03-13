@@ -13,6 +13,8 @@ spec:
     path: {{ .Values.myapp.git.path }}
     helm:
       values: |
+        deployer:
+        {{- .Values.deployer | toYaml | nindent 12 }}
         tenant:
         {{- .Values.tenant | toYaml | nindent 12 }}
         myapp:
