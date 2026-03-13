@@ -20,7 +20,7 @@ spec:
       containers:
       - name: myotherapp
         image: registry.access.redhat.com/ubi8/httpd-24:latest
-        imagePullPolicy: always
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
           protocol: TCP
