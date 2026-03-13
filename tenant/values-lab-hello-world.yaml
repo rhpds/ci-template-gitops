@@ -1,0 +1,19 @@
+# Default values for hello-world lab
+# These can be overridden by passing values through the catalog
+
+labHelloWorld:
+  app:
+    enabled: false
+
+    # Demonstration values - can be overridden from catalog
+    message: "🎓 Hello from DEFAULT values - edit catalog to override me!"
+    replicas: 1
+
+    # Additional configurable values
+    imageTag: "latest"
+
+    # Git repository configuration
+    git:
+      url: https://github.com/rhpds/sha-learns-ci-gitops.git
+      revision: main
+      path: tenant/labs/hello-world

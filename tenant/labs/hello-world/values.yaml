@@ -1,0 +1,30 @@
+# Default values for hello-world chart
+# These are overridden by bootstrap passing values from catalog
+
+# Tenant context (passed from bootstrap)
+tenant:
+  name: default-user
+
+# Deployer context (passed from bootstrap)
+deployer:
+  domain: apps.example.com
+  apiUrl: https://api.example.com:6443
+
+# App-specific values
+message: "Default message if nothing passed"
+replicas: 1
+imageTag: "latest"
+
+# Container image (OpenShift-compatible - runs on port 8080, unprivileged)
+image:
+  repository: registry.access.redhat.com/ubi8/httpd-24
+  pullPolicy: IfNotPresent
+
+# Resources
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi

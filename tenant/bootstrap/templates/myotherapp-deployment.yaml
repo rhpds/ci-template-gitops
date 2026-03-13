@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myotherapp
+  labels:
+    app: myapp
+    app.kubernetes.io/part-of: myapp
+    tenant: {{ .Values.tenant.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myotherapp
+  template:
+    metadata:
+      labels:
+        app: myotherapp
+        tenant: {{ .Values.tenant.name }}
+    spec:
+      containers:
+      - name: myotherapp
+        image: registry.access.redhat.com/ubi8/httpd-24:latest
+        imagePullPolicy: always
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http

@@ -17,9 +17,22 @@ tenant:
   user:
     name: USERNAME
 
+myapp:
+  git:
+    path: tenant/myapp
+    <<: *git_defaults
+
+myotherapp:
+  namespace: myotherapp-USERNAME
+
 labs:
   ocpOps:
-    enabled: true
+    enabled: false
     git:
-      path: tenant/ocpOps
+      path: tenant/labs/ocpOps
+      <<: *git_defaults
+  helloWorld:
+    enabled: false
+    git:
+      path: tenant/labs/helloWorld
       <<: *git_defaults
