@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: hello-world-{{ .Values.tenant.name | lower }}
+  name: hello-world-{{ .Values.tenant.user.name | lower }}
   namespace: openshift-gitops
   labels:
     app: hello-world
@@ -12,9 +12,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: {{ .Values.app.git.url }}
-    targetRevision: {{ $lab.app.git.revision }}
-    path: {{ $lab.app.git.path }}
+    repoURL: {{ .Values.labs.helloWorld.git.repoURL }}
+    targetRevision: {{ .Values.labs.helloWorld.git.targetRevision }}
+    path: {{ .Values.labs.helloWorld.git.path }}
     helm:
       values: |
         # Pass tenant context
@@ -27,13 +27,13 @@ spec:
           apiUrl: {{ .Values.deployer.apiUrl }}
 
         # Pass hello-world specific values
-        message: {{ $lab.app.message | quote }}
-        replicas: {{ $lab.app.replicas }}
-        imageTag: {{ $lab.app.imageTag | quote }}
+        message: {{ .Values.labs.helloWorld.message | quote }}
+        replicas: {{ .Values.labs.helloWorld.replicas }}
+        imageTag: {{ .Values.labs.helloWorld.imageTag | quote }}
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ .Values.tenant.namespace.lab }}
+    namespace: {{ .Values.labs.helloWorld.namespace }}
 
   syncPolicy:
     automated:

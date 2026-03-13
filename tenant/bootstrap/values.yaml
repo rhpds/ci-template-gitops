@@ -36,3 +36,7 @@ labs:
     git:
       path: tenant/labs/helloWorld
       <<: *git_defaults
+    namespace: default
+    message: "🎓 Hello from DEFAULT values - edit catalog to override me!"
+    replicas: 1
+    imageTag: "latest"
