@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/part-of: myapp
     tenant: {{ .Values.tenant.name }}
 spec:
-  replicas: {{ .Values.replicas }}
+  replicas: 1
   selector:
     matchLabels:
       app: myapp
@@ -19,9 +19,9 @@ spec:
     spec:
       containers:
       - name: myapp
-        image: {{ .Values.image.repository }}:{{ .Values.imageTag }}
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        ports:
+        image: registry.access.redhat.com/ubi8/httpd-24:latest
+        imagePullPolicy: Always
+         ports:
         - containerPort: 8080
           protocol: TCP
           name: http
@@ -31,7 +31,12 @@ spec:
           readOnly: true
 
         resources:
-          {{- toYaml .Values.resources | nindent 10 }}
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
 
       - name: html-content
         configMap:
