@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tenant-{{ include "myapp.tenantName" . }}-myapp-provisiondata
+  name: tenant-{{ .Values.myapp.tenantName }}-myapp-provisiondata
   namespace: {{ .Values.myapp.namespace }}
   labels:
     demo.redhat.com/tenant-{{ .Values.tenant.name }}: "true"

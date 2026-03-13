@@ -89,7 +89,7 @@ data:
             <div class="method-tag">METHOD 3: HTML Page via ConfigMap</div>
 
             <div class="message-box">
-                {{ .Values.message }}
+                No special message in this app.
             </div>
 
             <div class="info">
@@ -100,11 +100,11 @@ data:
                 </div>
                 <div class="info-row">
                     <span class="label">Replicas:</span>
-                    <span>{{ .Values.replicas }}</span>
+                    <span>uno</span>
                 </div>
                 <div class="info-row">
                     <span class="label">Image Tag:</span>
-                    <span>{{ .Values.imageTag }}</span>
+                    <span>testInProd</span>
                 </div>
                 <div class="info-row">
                     <span class="label">Cluster Domain:</span>
