@@ -37,3 +37,5 @@ Changes are surgical — any rename or structural change is reflected across all
 - commit `5ec6f42`
     - Added GitHub-compatible table of contents to `tenant/START_HERE.md` (anchor links to each section).
     - Converted file name mentions in both `START_HERE.md` and `tenant/START_HERE.md` to relative GitHub links.
+- commit `2e75dc7`
+    - Simplified root `START_HERE.md` to a placeholder; removed architecture overview and Quick Reference table pending completion of all layers. TODO comment left for future full overview.
