@@ -51,3 +51,9 @@ Changes are surgical — any rename or structural change is reflected across all
 - commit `7c7bbb2`
     - Set destination namespace to `example1-platform-shared-gitlab` on the ArgoCD Application; previously unset so ArgoCD had no namespace to deploy into.
 
+---
+
+## To Discuss
+
+- **Infra always deploys platform — catalog cannot opt out.** Currently `bootstrap-infra` unconditionally spawns `bootstrap-platform` (`platform.enabled: true` is baked into `infra/bootstrap/values.yaml`). The catalog has no way to deploy infra without platform, or platform without infra. Should the catalog be able to control each layer independently, or is "infra always brings platform" the intended contract?
+
