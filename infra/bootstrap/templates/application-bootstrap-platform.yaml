@@ -14,6 +14,9 @@ spec:
       values: |
         deployer:
         {{- .Values.deployer | toYaml | nindent 10 }}
+        {{- if .Values.platformValues }}
+        {{- .Values.platformValues | toYaml | nindent 8 }}
+        {{- end }}
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:

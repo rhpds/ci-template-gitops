@@ -66,6 +66,11 @@ deschedulerOperator:
     path: infra/descheduler-operator
     <<: *git_defaults
 
+# Values passed through verbatim to platform/bootstrap.
+# Use this to configure platform apps from the catalog without
+# infra/bootstrap needing to know about each one.
+platformValues: {}
+
 ### Keycloak automation.  You probably don't need this.
 keycloakInfra:
   enabled: false
