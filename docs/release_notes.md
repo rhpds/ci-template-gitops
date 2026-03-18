@@ -17,4 +17,5 @@ Changes are surgical — any rename or structural change is reflected across all
         - `myotherapp-deployment.yaml` → `example1-inline-resource` (single manifest embedded directly in bootstrap)
         - `tenant/myapp/` + `application-myapp.yaml` → `tenant/example2-helm-basic/` + `application-example2-helm-basic.yaml` (ArgoCD Application pointing at a simple Helm chart)
         - `tenant/labs/hello-world/` + `application-hello-world.yaml` → `tenant/labs/example3-helm-parameterized/` + `application-example3-helm-parameterized.yaml` (full Helm chart with catalog-driven values)
+- Removed `tenant/CLAUDE.md` (AI assistant instructions) and `tenant/values-lab-hello-world.yaml` (orphaned values file unreachable by `Files.Get` from the bootstrap chart).
 - [commit `655d9f8`] Removed all `scratch/` directories: `bootstrap/scratch/`, `infra/bootstrap/scratch/` (and nested `keycloak-realm/scratch/`); contained draft/reference material not deployed by any active template.
