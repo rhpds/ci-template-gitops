@@ -34,3 +34,6 @@ Changes are surgical — any rename or structural change is reflected across all
 - commit `4412140`
     - Added `START_HERE.md` at repo root: brief overview of the three-layer architecture (infra/platform/tenant) and pointer to the tenant doc.
     - Added `tenant/START_HERE.md`: full walkthrough of the tenant layer including file tree, bootstrap chart explanation, per-example sections (inline resources, Helm chart, parameterized Helm chart), and AgnosticV catalog snippets for each example.
+- commit `5ec6f42`
+    - Added GitHub-compatible table of contents to `tenant/START_HERE.md` (anchor links to each section).
+    - Converted file name mentions in both `START_HERE.md` and `tenant/START_HERE.md` to relative GitHub links.
