@@ -53,6 +53,15 @@ Changes are surgical — any rename or structural change is reflected across all
 
 ---
 
+---
+
+## v0.3 — Tenant fixes (2026-03-18)
+
+- commit `48038f8`
+    - *REVIEW* Fixed example3 ArgoCD Application `project` from `default` to `tenants`; was deploying outside the tenant AppProject scope.
+
+---
+
 ## To Discuss
 
 - **Infra always deploys platform — catalog cannot opt out.** Currently `bootstrap-infra` unconditionally spawns `bootstrap-platform` (`platform.enabled: true` is baked into `infra/bootstrap/values.yaml`). The catalog has no way to deploy infra without platform, or platform without infra. Should the catalog be able to control each layer independently, or is "infra always brings platform" the intended contract?
