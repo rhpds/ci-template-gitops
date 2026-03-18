@@ -39,3 +39,12 @@ Changes are surgical — any rename or structural change is reflected across all
     - Converted file name mentions in both `START_HERE.md` and `tenant/START_HERE.md` to relative GitHub links.
 - commit `2e75dc7`
     - Simplified root `START_HERE.md` to a placeholder; removed architecture overview and Quick Reference table pending completion of all layers. TODO comment left for future full overview.
+
+---
+
+## v0.2 — Cluster/Infra/Platform layer (2026-03-18)
+
+- commit `ac82af7`
+    - Added `platformValues` passthrough in `infra/bootstrap`: catalog can now independently configure platform apps without infra needing to know about them.
+- commit `a93de60`
+    - Added `platform/example1-platform-shared-gitlab/` (copied from `platform/gitlab/`) and wired it into `platform/bootstrap` as a disabled-by-default example of a cluster-wide shared platform resource.
