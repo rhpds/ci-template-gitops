@@ -25,7 +25,7 @@ Changes are surgical — any rename or structural change is reflected across all
     - Renamed Application templates to lead with example number for clean sort order: `application-example2-helm-basic.yaml` → `example2-application-helm-basic.yaml`, `application-example3-helm-parameterized.yaml` → `example3-application-helm-parameterized.yaml`.
 - commit `baeb247`
     - *REVIEW* Added explicit `enabled: false` default gate to example1 and example2 (previously always rendered unconditionally); all three examples now require `enabled: true` to be set explicitly in the catalog helm values.
-- commit `(pending)`
+- commit `79dee45`
     - Added Service and Route to example1; split into three files with `-pod`, `-service`, `-route` suffixes (`example1-inline-resource-pod.yaml`, `example1-inline-resource-service.yaml`, `example1-inline-resource-route.yaml`). All three share the same `enabled` gate.
 - commit `43f6055`
     - Changed default namespace for example3 from `default` to `NAMESPACE-MUST-BE-SET-BY-CATALOG` to prevent silent misconfiguration; if the catalog omits the namespace, ArgoCD will now fail loudly instead of deploying to the wrong namespace.
