@@ -1,0 +1,39 @@
+gitlab:
+  image: "quay.io/redhat-gpte/gitlab:16.0.4"
+  email:
+    address: "gitlab@example.com"
+    displayName: "Tyrell Reddy"
+    replyTo: "noreply@redhat.com"
+  smtp:
+    enabled: "false"
+    domain: "example.com"
+    host: "smtp.gitlab-gitlab.apps.cluster-br9rv.br9rv.sandbox1083.opentlc.com"
+    port: "587"
+    user: "gitlab"
+    password: "gitlab"
+  ssh:
+    host: "ssh.gitlab-gitlab.apps.cluster-br9rv.br9rv.sandbox1083.opentlc.com"
+    port: "22"
+  rootPassword: openshift
+  host: gitlab-gitlab.apps.cluster-br9rv.br9rv.sandbox1083.opentlc.com
+  https: "true"
+  rootEmail: "treddy@redhat.com"
+  keyBase:
+    db: "0123456789"
+    otp: "0123456789"
+    secret: "0123456789"
+  users:
+    base: user
+    password: openshift
+    count: 2
+  groups: []
+  # groups:
+  # - name: backstage
+  #   repo:
+  #   - name: software-templates
+  #     url: https://github.com/treddy08/software-templates.git
+
+postgresql:
+  dbUser: gitlab
+  dbPassword: passw0rd
+  dbName: gitlab_production

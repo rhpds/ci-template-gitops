@@ -1,0 +1,166 @@
+kind: ConfigMap
+metadata:
+  name:  cm-init-gitlab
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+apiVersion: v1
+data:
+  playbook.yaml: |
+    ---
+    - name: Configure GitLab
+      hosts: localhost
+      vars:
+        gitlab_namespace: {{ $.Release.Namespace }}
+        root_password: {{ $.Values.gitlab.rootPassword }}
+        user_create: true
+      tasks:
+        - name: Pause for 5 minutes waiting for GitLab
+          ansible.builtin.pause:
+            minutes: 5
+
+        - name: Check GitLab Liveness
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/projects
+            method: GET
+            validate_certs: false
+          register: r_liveness
+          retries: 60
+          delay: 10
+          until: r_liveness.status == 200
+
+        - name: Generate root user personal token
+          shell: |
+            POD=$(oc get pod -l app=gitlab -n gitlab --no-headers | awk '{print $1}')
+            oc exec $POD -n {{ $.Release.Namespace }} -- /bin/sh -c /scripts/create-root-pat.sh
+            ROOT_PAT=$(oc exec $POD -n {{ $.Release.Namespace }} -- /bin/sh -c "cat /tmp/root.pat")
+            oc delete secret root-user-personal-token -n {{ $.Release.Namespace }} --ignore-not-found
+            oc create secret generic root-user-personal-token --from-literal=token=$ROOT_PAT -n {{ $.Release.Namespace }}
+
+        - name: Retrieve root token
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Secret
+            name: root-user-personal-token
+            namespace: '{{ "{{" }} gitlab_namespace {{ "}}" }}'
+          register: r_root_token
+          failed_when: r_root_token.resources[0].data.token | length == 0
+
+        - name:
+          debug:
+            var: r_root_token
+
+        - name: Decode root token
+          set_fact:
+            root_token: '{{ "{{" }} r_root_token.resources[0].data.token | b64decode {{ "}}" }}'
+
+        - name: Update application settings
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/application/settings
+            method: PUT
+            body_format: form-urlencoded
+            body:
+              import_sources: "git,github,gitea"
+              version_check_enabled: "false"
+              allow_local_requests_from_web_hooks_and_services: "true"
+              auto_devops_enabled: "false"
+            headers:
+              PRIVATE-TOKEN: '{{ "{{" }} root_token {{ "}}" }}'
+            validate_certs: false
+            status_code: 200
+
+        - name: Create users
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/users
+            method: POST
+            body_format: form-urlencoded
+            body:
+              admin: false
+              email: {{ $.Values.gitlab.users.base }}{{ "{{" }} item {{ "}}" }}@demo.redhat.com
+              public_email: {{ $.Values.gitlab.users.base }}{{ "{{" }} item {{ "}}" }}@demo.redhat.com
+              skip_confirmation: true
+              username: {{ $.Values.gitlab.users.base }}{{ "{{" }} item {{ "}}" }}
+              password: {{ $.Values.gitlab.users.password }}
+              name: "{{ "{{ '" }}{{ $.Values.gitlab.users.base }}{{ "' | capitalize }}" }}{{ "{{" }} item {{ "}}" }} GitLab"
+            headers:
+              PRIVATE-TOKEN: '{{ "{{" }} root_token {{ "}}" }}'
+            validate_certs: false
+            status_code: 201
+          register: r_user
+          retries: 100
+          delay: 5
+          until: r_user.status == 201
+          loop: '{{ "{{" }} range(1, {{ $.Values.gitlab.users.count }} + 1) | list {{ "}}" }}'
+
+        - name: List users
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/users?per_page=100
+            method: GET
+            headers:
+              PRIVATE-TOKEN: '{{ "{{" }} root_token {{ "}}" }}'
+            validate_certs: false
+            status_code: 200
+          register: r_users
+
+{{- range $item := .Values.gitlab.groups }}
+
+        - name: Create group
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/groups
+            method: POST
+            body_format: form-urlencoded
+            body:
+              name: {{ $item.name }}
+              path: {{ $item.name }}
+              visibility: public
+            headers:
+              PRIVATE-TOKEN: '{{ "{{" }} root_token {{ "}}" }}'
+            validate_certs: false
+            status_code: 201
+          register: r_group
+          retries: 100
+          delay: 5
+          until: r_group.status == 201
+
+        - name: Import repository to group
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/projects
+            method: POST
+            body_format: form-urlencoded
+            body:
+              name: '{{ "{{" }} item.name {{ "}}" }}'
+              import_url: '{{ "{{" }} item.url {{ "}}" }}'
+              visibility: public
+              namespace_id: '{{ "{{" }} r_group.json.id {{ "}}" }}'
+            headers:
+              PRIVATE-TOKEN: '{{ "{{" }} root_token {{ "}}" }}'
+            validate_certs: false
+            status_code: 201
+          retries: 100
+          delay: 5
+          register: r_import
+          until: r_import.status == 201
+          loop:
+{{- range $item1 := $item.repo }}
+            - name: {{ $item1.name }}
+              url: {{ $item1.url }}
+{{- end }}
+
+        - name: Add user to group
+          when: item.username.startswith('{{ $.Values.gitlab.users.base }}')
+          ansible.builtin.uri:
+            url: https://{{ $.Values.gitlab.host }}/api/v4/groups/{{ "{{" }} r_group.json.id {{ "}}" }}/members
+            method: POST
+            body_format: form-urlencoded
+            body:
+              user_id: '{{ "{{" }} item.id {{ "}}" }}'
+              access_level: 50
+            headers:
+              PRIVATE-TOKEN: '{{ "{{" }} root_token {{ "}}" }}'
+            validate_certs: false
+            status_code: 201
+          register: r_group_user
+          retries: 100
+          delay: 5
+          until: r_group_user.status == 201
+          loop: '{{ "{{" }} r_users.json {{ "}}" }}'
+{{- end }}

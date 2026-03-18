@@ -1,0 +1,28 @@
+{{ if .Values.example1PlatformSharedGitlab.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example1-platform-shared-gitlab
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: {{ .Values.example1PlatformSharedGitlab.git.repoURL }}
+    targetRevision: {{ .Values.example1PlatformSharedGitlab.git.targetRevision }}
+    path: platform/example1-platform-shared-gitlab
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}
