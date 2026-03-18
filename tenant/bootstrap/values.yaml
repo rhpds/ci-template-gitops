@@ -27,11 +27,6 @@ myotherapp:
   namespace: myotherapp-USERNAME
 
 labs:
-  ocpOps:
-    enabled: false
-    git:
-      path: tenant/labs/ocpOps
-      <<: *git_defaults
   helloWorld:
     enabled: false
     git:
