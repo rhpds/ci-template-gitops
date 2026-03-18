@@ -10,9 +10,9 @@ ci-template-gitops/
 ```
 
 Each layer is an independent ArgoCD bootstrap. The deployer creates:
-- `bootstrap-infra` → points at `infra/bootstrap/`
-- `bootstrap-platform` → points at `platform/bootstrap/`
-- `bootstrap-tenant-<GUID>` → points at `tenant/bootstrap/`
+- `bootstrap-infra` → points at [`infra/bootstrap/`](infra/bootstrap/)
+- `bootstrap-platform` → points at [`platform/bootstrap/`](platform/bootstrap/)
+- `bootstrap-tenant-<GUID>` → points at [`tenant/bootstrap/`](tenant/bootstrap/)
 
 The tenant layer is where the per-user lab workloads live. If you're here to understand how examples are structured or how to add your own workload, start with the tenant layer.
 
@@ -32,8 +32,8 @@ The tenant layer is where the per-user lab workloads live. If you're here to und
 
 | Layer | ArgoCD App Name | Chart Path | Purpose |
 |-------|----------------|------------|---------|
-| Infra | `bootstrap-infra` | `infra/bootstrap/` | Operators (OLM subscriptions) |
-| Platform | `bootstrap-platform` | `platform/bootstrap/` | Cluster resources (post-operator) |
-| Tenant | `bootstrap-tenant-<GUID>` | `tenant/bootstrap/` | Per-user lab workloads |
+| Infra | `bootstrap-infra` | [`infra/bootstrap/`](infra/bootstrap/) | Operators (OLM subscriptions) |
+| Platform | `bootstrap-platform` | [`platform/bootstrap/`](platform/bootstrap/) | Cluster resources (post-operator) |
+| Tenant | `bootstrap-tenant-<GUID>` | [`tenant/bootstrap/`](tenant/bootstrap/) | Per-user lab workloads |
 
 All three examples in the tenant layer are **disabled by default**. The catalog must explicitly set `enabled: true` for each one via `ocp4_workload_gitops_bootstrap_helm_values`.

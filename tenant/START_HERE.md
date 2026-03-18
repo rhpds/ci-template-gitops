@@ -6,6 +6,18 @@ This is **not** where cluster-wide operators or infrastructure live. That belong
 
 ---
 
+## Table of Contents
+
+- [File Structure](#file-structure)
+- [How It Works](#how-it-works)
+- [The Bootstrap Chart](#the-bootstrap-chart-tenantbootstrap)
+- [Example 1 — Inline Resource](#example-1--inline-resource-example1inlineresource)
+- [Example 2 — Helm Chart in Repo](#example-2--helm-chart-in-repo-example2helmbasic)
+- [Example 3 — Parameterized Helm Chart](#example-3--parameterized-helm-chart-labsexample3helmparameterized)
+- [Enabling Multiple Examples Together](#enabling-multiple-examples-together)
+
+---
+
 ## File Structure
 
 ```
@@ -47,17 +59,17 @@ tenant/
 
 ## How It Works
 
-The deployer runs the `ocp4_workload_gitops_bootstrap` Ansible role, which creates a single ArgoCD Application called `bootstrap-tenant-<GUID>`. That Application points at `tenant/bootstrap/` in this repo, rendering it as a Helm chart with values injected from the catalog.
+The deployer runs the `ocp4_workload_gitops_bootstrap` Ansible role, which creates a single ArgoCD Application called `bootstrap-tenant-<GUID>`. That Application points at [`tenant/bootstrap/`](bootstrap/) in this repo, rendering it as a Helm chart with values injected from the catalog.
 
 The bootstrap chart is the **entry point**. Depending on which examples are enabled in the catalog, it either renders Kubernetes manifests directly (Example 1) or creates additional ArgoCD Applications (Examples 2 and 3) that pull in their own Helm charts.
 
-All examples are **disabled by default** in `values.yaml`. The catalog must explicitly enable each one.
+All examples are **disabled by default** in [`bootstrap/values.yaml`](bootstrap/values.yaml). The catalog must explicitly enable each one.
 
 ---
 
 ## The Bootstrap Chart (`tenant/bootstrap/`)
 
-`values.yaml` contains defaults for every example. The catalog overrides these at deploy time via `ocp4_workload_gitops_bootstrap_helm_values`.
+[`bootstrap/values.yaml`](bootstrap/values.yaml) contains defaults for every example. The catalog overrides these at deploy time via `ocp4_workload_gitops_bootstrap_helm_values`.
 
 Key top-level values injected by the deployer (you don't need to set these manually):
 - `deployer.domain` — cluster ingress domain
@@ -96,9 +108,9 @@ ocp4_workload_gitops_bootstrap_helm_values:
 No separate ArgoCD Application. No sub-chart. The Deployment, Service, and Route are rendered as part of `bootstrap-tenant-<GUID>` itself. This is the simplest possible pattern — one chart, everything inline.
 
 **Files:**
-- `bootstrap/templates/example1-inline-resource-pod.yaml` — Deployment (UBI8 httpd)
-- `bootstrap/templates/example1-inline-resource-service.yaml` — ClusterIP Service on port 8080
-- `bootstrap/templates/example1-inline-resource-route.yaml` — Edge-terminated Route
+- [`bootstrap/templates/example1-inline-resource-pod.yaml`](bootstrap/templates/example1-inline-resource-pod.yaml) — Deployment (UBI8 httpd)
+- [`bootstrap/templates/example1-inline-resource-service.yaml`](bootstrap/templates/example1-inline-resource-service.yaml) — ClusterIP Service on port 8080
+- [`bootstrap/templates/example1-inline-resource-route.yaml`](bootstrap/templates/example1-inline-resource-route.yaml) — Edge-terminated Route
 
 All three files share the same `{{ if .Values.example1InlineResource.enabled }}` gate. If the gate is false, none of the three resources are rendered.
 
@@ -127,13 +139,13 @@ ocp4_workload_gitops_bootstrap_helm_values:
 
 ## Example 2 — Helm Chart in Repo (`example2HelmBasic`)
 
-**Pattern:** The bootstrap chart renders an ArgoCD `Application` resource that points at a Helm chart living in a sub-directory of the same repo (`tenant/example2-helm-basic/`).
+**Pattern:** The bootstrap chart renders an ArgoCD `Application` resource that points at a Helm chart living in a sub-directory of the same repo ([`example2-helm-basic/`](example2-helm-basic/)).
 
 This adds a layer of indirection: the bootstrap Application creates a child Application, which manages its own set of resources. This gives Example 2 its own sync lifecycle, its own sync status in the ArgoCD UI, and lets the child chart evolve independently.
 
 **Files involved:**
-- `bootstrap/templates/example2-application-helm-basic.yaml` — the ArgoCD Application manifest
-- `example2-helm-basic/` — the full Helm chart with Deployment, Service, Route, and ConfigMaps
+- [`bootstrap/templates/example2-application-helm-basic.yaml`](bootstrap/templates/example2-application-helm-basic.yaml) — the ArgoCD Application manifest
+- [`example2-helm-basic/`](example2-helm-basic/) — the full Helm chart with Deployment, Service, Route, and ConfigMaps
 
 **Route hostname:** `example2-helm-basic-<GUID>.<domain>`
 
@@ -157,7 +169,7 @@ ocp4_workload_gitops_bootstrap_helm_values:
       targetRevision: main    # or a specific branch/tag
 ```
 
-> **Note:** The `git.repoURL` and `git.path` have sensible defaults in `values.yaml`. You only need to override `targetRevision` if you're pointing at a non-default branch (e.g., during development on a feature branch).
+> **Note:** The `git.repoURL` and `git.path` have sensible defaults in [`bootstrap/values.yaml`](bootstrap/values.yaml). You only need to override `targetRevision` if you're pointing at a non-default branch (e.g., during development on a feature branch).
 
 ---
 
@@ -165,12 +177,12 @@ ocp4_workload_gitops_bootstrap_helm_values:
 
 **Pattern:** Same as Example 2 (bootstrap creates a child ArgoCD Application pointing at a sub-chart), but the child chart is **fully parameterized** — the catalog drives its behavior through values rather than hardcoding them.
 
-The chart at `tenant/labs/example3-helm-parameterized/` accepts:
+The chart at [`labs/example3-helm-parameterized/`](labs/example3-helm-parameterized/) accepts:
 - `message` — displayed on the app's web page
 - `replicas` — number of pod replicas
 - `imageTag` — container image tag
 
-These are passed from the catalog → `values.yaml` defaults → ArgoCD Application → child chart. The bootstrap template explicitly threads each value through, so the catalog has full control.
+These are passed from the catalog → [`bootstrap/values.yaml`](bootstrap/values.yaml) defaults → ArgoCD Application → child chart. The bootstrap template at [`bootstrap/templates/example3-application-helm-parameterized.yaml`](bootstrap/templates/example3-application-helm-parameterized.yaml) explicitly threads each value through, so the catalog has full control.
 
 **Route hostname:** `example3-helm-parameterized-<GUID>.<domain>`
 
@@ -196,7 +208,7 @@ ocp4_workload_gitops_bootstrap_helm_values:
       imageTag: "latest"
 ```
 
-> **Important:** The `namespace` field has no safe default — it is set to `NAMESPACE-MUST-BE-SET-BY-CATALOG` in `values.yaml` intentionally. If you omit it, ArgoCD will fail loudly rather than silently deploying to the wrong namespace.
+> **Important:** The `namespace` field has no safe default — it is set to `NAMESPACE-MUST-BE-SET-BY-CATALOG` in [`bootstrap/values.yaml`](bootstrap/values.yaml) intentionally. If you omit it, ArgoCD will fail loudly rather than silently deploying to the wrong namespace.
 
 ---
 
