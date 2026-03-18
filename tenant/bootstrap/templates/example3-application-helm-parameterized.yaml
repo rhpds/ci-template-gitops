@@ -10,7 +10,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: tenants
   source:
     repoURL: {{ .Values.labs.example3HelmParameterized.git.repoURL }}
     targetRevision: {{ .Values.labs.example3HelmParameterized.git.targetRevision }}
