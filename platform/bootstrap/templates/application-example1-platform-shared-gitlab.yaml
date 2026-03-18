@@ -12,6 +12,7 @@ spec:
     path: platform/example1-platform-shared-gitlab
   destination:
     server: https://kubernetes.default.svc
+    namespace: example1-platform-shared-gitlab
   syncPolicy:
     automated:
       enabled: true
