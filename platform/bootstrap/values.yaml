@@ -62,10 +62,10 @@ gitlab:
   enabled: false
 
 # Example 1 — Platform shared resource: GitLab instance shared across all tenants
-example1PlatformSharedGitlab:
+platformExampleSharedGitlab:
   enabled: false
   git:
-    path: platform/example1-platform-shared-gitlab
+    path: platform/platform-example-shared-gitlab
     <<: *git_defaults
 
 OAuthAccountOperator:

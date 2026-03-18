@@ -1,5 +1,5 @@
 apiVersion: v2
-name: example1-platform-shared-gitlab
+name: platform-example-shared-gitlab
 description: "Example 1 — Platform shared resource: GitLab instance shared across all tenants"
 type: application
 
