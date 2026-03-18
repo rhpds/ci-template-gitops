@@ -31,3 +31,6 @@ Changes are surgical — any rename or structural change is reflected across all
     - Added Service and Route to example1; split into three files with `-pod`, `-service`, `-route` suffixes (`example1-inline-resource-pod.yaml`, `example1-inline-resource-service.yaml`, `example1-inline-resource-route.yaml`). All three share the same `enabled` gate.
 - commit `43f6055`
     - Changed default namespace for example3 from `default` to `NAMESPACE-MUST-BE-SET-BY-CATALOG` to prevent silent misconfiguration; if the catalog omits the namespace, ArgoCD will now fail loudly instead of deploying to the wrong namespace.
+- commit `TBD`
+    - Added `START_HERE.md` at repo root: brief overview of the three-layer architecture (infra/platform/tenant) and pointer to the tenant doc.
+    - Added `tenant/START_HERE.md`: full walkthrough of the tenant layer including file tree, bootstrap chart explanation, per-example sections (inline resources, Helm chart, parameterized Helm chart), and AgnosticV catalog snippets for each example.
