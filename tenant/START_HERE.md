@@ -65,6 +65,15 @@ The bootstrap chart is the **entry point**. Depending on which examples are enab
 
 All examples are **disabled by default** in [`bootstrap/values.yaml`](bootstrap/values.yaml). The catalog must explicitly enable each one.
 
+### ArgoCD Project vs OpenShift Namespace
+
+These are two different things and are easy to confuse:
+
+- **ArgoCD project** — controls which ArgoCD AppProject the Application belongs to. All tenant Applications (Examples 2 and 3) use `project: tenants`. This is a cluster-wide ArgoCD concept, not a Kubernetes namespace.
+- **OpenShift namespace** — the Kubernetes namespace where the actual workload resources (Deployments, Services, Routes) are created. This is per-tenant and per-example, e.g. `user-<GUID>-example1-lab`, `user-<GUID>-example2-lab`. The namespace is created by the `ocp4_workload_tenant_namespace` Ansible workload before ArgoCD runs, and must be set explicitly in the catalog.
+
+Example 1 is inline — it has no ArgoCD Application of its own, so no AppProject. It deploys directly into whatever namespace `bootstrap-tenant-<GUID>` targets via `example1InlineResource.namespace`.
+
 ---
 
 ## The Bootstrap Chart (`tenant/bootstrap/`)
