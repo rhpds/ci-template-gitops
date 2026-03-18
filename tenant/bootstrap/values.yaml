@@ -18,12 +18,14 @@ tenant:
     name: USERNAME
 
 example2HelmBasic:
+  enabled: false
   git:
     path: tenant/example2-helm-basic
     <<: *git_defaults
   namespace: example2-USERNAME
 
 example1InlineResource:
+  enabled: false
   namespace: example1-USERNAME
 
 labs:
