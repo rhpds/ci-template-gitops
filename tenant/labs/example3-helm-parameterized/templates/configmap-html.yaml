@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hello-world-html
+  name: example3-helm-parameterized-html
   labels:
-    app: hello-world
+    app: example3-helm-parameterized
     tenant: {{ .Values.tenant.name }}
 data:
   # METHOD 3: HTML page served by httpd
@@ -126,7 +126,7 @@ data:
 
             <div class="footer">
                 <p>✨ This page demonstrates how values flow from catalog → bootstrap → app</p>
-                <p>Edit the catalog's <code>labHelloWorld.app.message</code> to change this text!</p>
+                <p>Edit the catalog's <code>labs.example3HelmParameterized.message</code> to change this text!</p>
             </div>
         </div>
     </body>

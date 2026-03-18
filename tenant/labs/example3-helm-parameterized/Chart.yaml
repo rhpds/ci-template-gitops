@@ -1,5 +1,5 @@
 apiVersion: v2
-name: hello-world
+name: example3-helm-parameterized
 description: Educational demo showing three methods of passing values (env var, ConfigMap, HTML page)
 type: application
 version: 0.1.0

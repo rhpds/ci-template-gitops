@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world
+  name: example3-helm-parameterized
   labels:
-    app: hello-world
-    app.kubernetes.io/part-of: hello-world
+    app: example3-helm-parameterized
+    app.kubernetes.io/part-of: example3-helm-parameterized
     tenant: {{ .Values.tenant.name }}
 spec:
   replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
-      app: hello-world
+      app: example3-helm-parameterized
   template:
     metadata:
       labels:
-        app: hello-world
+        app: example3-helm-parameterized
         tenant: {{ .Values.tenant.name }}
     spec:
       containers:
@@ -62,9 +62,9 @@ spec:
       # Volume for METHOD 2: ConfigMap as file
       - name: config-message
         configMap:
-          name: hello-world-message
+          name: example3-helm-parameterized-message
 
       # Volume for METHOD 3: HTML page
       - name: html-content
         configMap:
-          name: hello-world-html
+          name: example3-helm-parameterized-html

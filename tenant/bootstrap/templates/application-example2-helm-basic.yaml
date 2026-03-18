@@ -1,27 +1,27 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: myapp-{{ .Values.tenant.name }}
+  name: example2-helm-basic-{{ .Values.tenant.name }}
   namespace: openshift-gitops
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: tenants
   source:
-    repoURL: {{ .Values.myapp.git.repoURL }}
-    targetRevision: {{ .Values.myapp.git.targetRevision }}
-    path: {{ .Values.myapp.git.path }}
+    repoURL: {{ .Values.example2HelmBasic.git.repoURL }}
+    targetRevision: {{ .Values.example2HelmBasic.git.targetRevision }}
+    path: {{ .Values.example2HelmBasic.git.path }}
     helm:
       values: |
         deployer:
         {{- .Values.deployer | toYaml | nindent 12 }}
         tenant:
         {{- .Values.tenant | toYaml | nindent 12 }}
-        myapp:
-        {{- .Values.myapp | toYaml | nindent 12 }}
+        example2HelmBasic:
+        {{- .Values.example2HelmBasic | toYaml | nindent 12 }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ .Values.myapp.namespace }}
+    namespace: {{ .Values.example2HelmBasic.namespace }}
   syncPolicy:
     automated:
       enabled: true

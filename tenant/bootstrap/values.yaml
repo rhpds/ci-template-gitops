@@ -17,22 +17,22 @@ tenant:
   user:
     name: USERNAME
 
-myapp:
+example2HelmBasic:
   git:
-    path: tenant/myapp
+    path: tenant/example2-helm-basic
     <<: *git_defaults
-  namespace: myapp-USERNAME
+  namespace: example2-USERNAME
 
-myotherapp:
-  namespace: myotherapp-USERNAME
+example1InlineResource:
+  namespace: example1-USERNAME
 
 labs:
-  helloWorld:
+  example3HelmParameterized:
     enabled: false
     git:
-      path: tenant/labs/helloWorld
+      path: tenant/labs/example3-helm-parameterized
       <<: *git_defaults
     namespace: default
-    message: "🎓 Hello from DEFAULT values - edit catalog to override me!"
+    message: "Hello from DEFAULT values - edit catalog to override me!"
     replicas: 1
     imageTag: "latest"

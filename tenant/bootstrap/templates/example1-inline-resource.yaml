@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: myotherapp
-  namespace: {{ .Values.myotherapp.namespace }}
+  name: example1-inline-resource
+  namespace: {{ .Values.example1InlineResource.namespace }}
   labels:
-    app: myapp
-    app.kubernetes.io/part-of: myapp
+    app: example1-inline-resource
+    app.kubernetes.io/part-of: example1-inline-resource
     tenant: {{ .Values.tenant.name }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: myotherapp
+      app: example1-inline-resource
   template:
     metadata:
       labels:
-        app: myotherapp
+        app: example1-inline-resource
         tenant: {{ .Values.tenant.name }}
     spec:
       containers:
-      - name: myotherapp
+      - name: example1-inline-resource
         image: registry.access.redhat.com/ubi8/httpd-24:latest
         imagePullPolicy: Always
         ports:

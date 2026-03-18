@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tenant-{{ .Values.myapp.tenantName }}-myapp-provisiondata
-  namespace: {{ .Values.myapp.namespace }}
+  name: tenant-{{ .Values.tenant.name }}-example2-helm-basic-provisiondata
+  namespace: {{ .Values.example2HelmBasic.namespace }}
   labels:
     demo.redhat.com/tenant-{{ .Values.tenant.name }}: "true"
   annotations:
     argocd.argoproj.io/sync-options: "Prune=true"
 data:
   provision_data: |
-    namespace: {{ .Values.myapp.namespace }}
+    namespace: {{ .Values.example2HelmBasic.namespace }}

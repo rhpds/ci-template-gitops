@@ -1,4 +1,4 @@
-# Default values for hello-world chart
+# Default values for example3-helm-parameterized chart
 # These are overridden by bootstrap passing values from catalog
 
 # Tenant context (passed from bootstrap)

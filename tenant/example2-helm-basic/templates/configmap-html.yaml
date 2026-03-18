@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: myapp-html
+  name: example2-html
   labels:
-    app: myapp
+    app: example2-helm-basic
     tenant: {{ .Values.tenant.name }}
 data:
   # METHOD 3: HTML page served by httpd

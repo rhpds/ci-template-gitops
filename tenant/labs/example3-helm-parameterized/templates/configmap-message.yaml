@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hello-world-message
+  name: example3-helm-parameterized-message
   labels:
-    app: hello-world
+    app: example3-helm-parameterized
     tenant: {{ .Values.tenant.name }}
 data:
   # METHOD 2: ConfigMap as file
