@@ -48,3 +48,5 @@ Changes are surgical — any rename or structural change is reflected across all
     - Added `platformValues` passthrough in `infra/bootstrap`: catalog can now independently configure platform apps without infra needing to know about them.
 - commit `a93de60`
     - Added `platform/example1-platform-shared-gitlab/` (copied from `platform/gitlab/`) and wired it into `platform/bootstrap` as a disabled-by-default example of a cluster-wide shared platform resource.
+- commit `7c7bbb2`
+    - Set destination namespace to `example1-platform-shared-gitlab` on the ArgoCD Application; previously unset so ArgoCD had no namespace to deploy into.
