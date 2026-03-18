@@ -1,22 +1,6 @@
 # ci-template-gitops — Start Here
 
-This repo is a GitOps template for deploying per-user lab environments on OpenShift using ArgoCD and the RHDP catalog system. It follows a three-layer architecture:
-
-```
-ci-template-gitops/
-├── infra/        # Operator installation (Subscriptions, OLM)
-├── platform/     # Cluster-wide resources that depend on those operators
-└── tenant/       # Per-user workloads deployed once per provisioned user
-```
-
-Each layer is an independent ArgoCD bootstrap. The deployer creates:
-- `bootstrap-infra` → points at [`infra/bootstrap/`](infra/bootstrap/)
-- `bootstrap-platform` → points at [`platform/bootstrap/`](platform/bootstrap/)
-- `bootstrap-tenant-<GUID>` → points at [`tenant/bootstrap/`](tenant/bootstrap/)
-
-The tenant layer is where the per-user lab workloads live. If you're here to understand how examples are structured or how to add your own workload, start with the tenant layer.
-
----
+#TODO: we will create the overview with everything is done
 
 ## Where to Go Next
 
