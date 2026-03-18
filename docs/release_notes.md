@@ -60,6 +60,13 @@ Changes are surgical — any rename or structural change is reflected across all
 - commit `48038f8`
     - *REVIEW* Fixed example3 ArgoCD Application `project` from `default` to `tenants`; was deploying outside the tenant AppProject scope.
 
+- commit `4f99648`
+    - Added note to `tenant/START_HERE.md` clarifying the distinction between ArgoCD project (`tenants`) and OpenShift namespace (`user-<GUID>-example*-lab`).
+- commit `0ad0fb8`
+    - Added warning in Example 1 section of `tenant/START_HERE.md`: inline resources must always set `namespace:` explicitly or they fall back to the Application's destination namespace.
+- commit `dfc46ed`
+    - Renamed `example1-platform-shared-gitlab` → `platform-example-shared-gitlab` across chart directory, Application template, values, and catalog (all references updated).
+
 ---
 
 ## To Discuss
