@@ -127,6 +127,8 @@ All three files share the same `{{ if .Values.example1InlineResource.enabled }}`
 
 **When to use this pattern:** Simple, one-off resources that don't need their own lifecycle or separate chart. Good for adding a single resource to a bootstrap deployment without creating a new chart.
 
+> **Important — always set `namespace:` explicitly on every resource.** Because Example 1 resources are rendered directly by `bootstrap-tenant-<GUID>`, any resource without an explicit `namespace:` field will fall back to whatever destination namespace ArgoCD has configured for that Application — which is not a tenant namespace. Every template in Example 1 sets `namespace: {{ .Values.example1InlineResource.namespace }}` for this reason.
+
 ### AgnosticV Tips
 
 Your AgnosticV `common.yaml` might look something like this for Example 1:
