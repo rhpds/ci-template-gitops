@@ -87,16 +87,12 @@ ocp4_workload_gitops_bootstrap_helm_values:
 
 ## Gotchas
 
-1. **The Application path is hardcoded to `gitlab`.** The Application template has `path: gitlab` hardcoded, meaning ArgoCD looks for the chart at `<repoRoot>/gitlab`, not `platform/gitlab`. If your chart is at `platform/gitlab`, this will fail.
+1. **`gitlab.host` must match your cluster.** The defaults are hardcoded to a specific sandbox cluster FQDN. Override to match your actual cluster's ingress domain.
 
-2. **Missing `git` defaults.** The `gitlab` entry in `platform/bootstrap/values.yaml` only has `enabled: false` — no `git:` block with `<<: *git_defaults`. The Application template references `.Values.gitlab.git.repoURL` which will be empty unless you add the defaults.
+2. **`keyBase` values are placeholder.** The defaults (`0123456789`) are insecure. Override for shared environments.
 
-3. **`gitlab.host` must match your cluster.** The defaults are hardcoded to a specific sandbox cluster FQDN. Override to match your actual cluster's ingress domain.
+3. **Init Job waits 5 minutes, then polls.** The init Job first pauses 5 minutes, then polls the GitLab API. Expect 5–15 minutes for full initialization.
 
-4. **`keyBase` values are placeholder.** The defaults (`0123456789`) are insecure. Override for shared environments.
+4. **Privileged containers.** GitLab, PostgreSQL, and Redis all run with `securityContext.privileged: true`.
 
-5. **Init Job waits 5 minutes, then polls.** The init Job first pauses 5 minutes, then polls the GitLab API. Expect 5–15 minutes for full initialization.
-
-6. **Privileged containers.** GitLab, PostgreSQL, and Redis all run with `securityContext.privileged: true`.
-
-7. **Vestigial `operator` helm values.** The Application template passes `operator.startingCSV` and `operator.installPlanApproval` as helm overrides, but GitLab has no operator — these values are unused.
+5. **Vestigial `operator` helm values.** The Application template passes `operator.startingCSV` and `operator.installPlanApproval` as helm overrides, but GitLab has no operator — these values are unused.

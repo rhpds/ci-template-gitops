@@ -77,8 +77,6 @@ ocp4_workload_gitops_bootstrap_helm_values:
 
 2. **`operator.enabled` is effectively unused.** The Subscription template checks `{{ if .Values.operator -}}` (map existence, always truthy) not `.Values.operator.enabled`.
 
-3. **Bootstrap path is `webterminal`, not `platform/webterminal`.** The bootstrap Application template hardcodes `path: webterminal` instead of using `.Values.webterminal.git.path`.
+3. **Two Application manifests.** `platform/webterminal/application-webterminal.yaml` is a standalone reference. The actual Application is `platform/bootstrap/templates/application-webterminal.yaml`.
 
-4. **Two Application manifests.** `platform/webterminal/application-webterminal.yaml` is a standalone reference. The actual Application is `platform/bootstrap/templates/application-webterminal.yaml`.
-
-5. **Bootstrap overrides `installPlanApproval`.** Always passes `Automatic` as a helm override (redundant with chart default).
+4. **Bootstrap overrides `installPlanApproval`.** Always passes `Automatic` as a helm override (redundant with chart default).

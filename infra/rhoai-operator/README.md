@@ -136,5 +136,3 @@ Available components: `aipipelines`, `dashboard`, `feastoperator`, `kserve`, `ku
 5. **Sub-chart dependencies.** The infra chart depends on `helper-status-checker` (~4.0.0) and `tpl` (~1.0.0) from `https://charts.stderr.at/`. If the external repo is unavailable, sync will fail.
 
 6. **Patcher uses PostSync hooks.** The patcher Jobs use `argocd.argoproj.io/hook: PostSync` with `HookSucceeded` delete policy — they run after the main sync and are cleaned up on success. This is different from regular sync-wave-based Jobs.
-
-7. **Missing `syncPolicy` on the platform Application.** Unlike other workloads, `application-rhoai.yaml` has no `syncPolicy` (no automated sync, no syncOptions, no retry). The Application must be synced manually from ArgoCD, or the template needs to be updated.
