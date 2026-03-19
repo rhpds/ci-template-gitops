@@ -99,7 +99,7 @@ Changes are surgical — any rename or structural change is reflected across all
 
 ## v0.5 — Directory Restructure (2026-03-18)
 
-- commit `pending`
+- commit `dbd3156`
     - Moved `infra/` and `platform/` directories under new `cluster/` directory (`git mv infra/ cluster/infra/`, `git mv platform/ cluster/platform/`).
     - Updated all `path:` values in `cluster/infra/bootstrap/values.yaml` (11 entries) to include `cluster/` prefix.
     - Fixed hardcoded `path: platform/bootstrap` in `cluster/infra/bootstrap/templates/application-bootstrap-platform.yaml` → `cluster/platform/bootstrap`.
@@ -109,6 +109,8 @@ Changes are surgical — any rename or structural change is reflected across all
     - Updated `START_HERE.md`: Quick Reference table paths and links updated.
     - Updated `tenant/START_HERE.md`: prose reference to `infra/` and `platform/` updated.
     - Updated all 13 workload READMEs under `cluster/`: relative links to `docs/enabling-workloads.md` fixed (`../../` → `../../../`), all inline path references and file tree code blocks updated with `cluster/` prefix.
+- commit `768d307`
+    - Removed obsolete `tenant/bootstrap/templates/example1-inline-resource.yaml`; this file was superseded when Example 1 was split into three files (`example1-inline-resource-pod.yaml`, `-service.yaml`, `-route.yaml`) in commit `79dee45`.
 
 ---
 
