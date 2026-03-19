@@ -92,6 +92,8 @@ Changes are surgical — any rename or structural change is reflected across all
     - *FIX* `application-webterminal.yaml`: replaced hardcoded `path: webterminal` with `{{ .Values.webterminal.git.path }}` (was pointing at repo root instead of `platform/webterminal`).
     - *FIX* `application-rhoai.yaml`: added missing `syncPolicy` block (automated sync, syncOptions, retry); was the only Application without one, requiring manual sync from ArgoCD UI.
     - *FIX* `application-openshift-oauth-account-operator.yaml`: changed `.Values.userOperator.*` references to `.Values.OAuthAccountOperator.*` (template referenced a key that didn't exist in values); removed `prune: true` (unique to this Application, inconsistent with all others); added `retry` block for consistency.
+- commit `06eb07f`
+    - Removed now-fixed gotchas from workload READMEs: gitlab (hardcoded path, missing git defaults), webterminal (hardcoded path), rhoai (missing syncPolicy). Renumbered remaining gotchas.
 
 ---
 
