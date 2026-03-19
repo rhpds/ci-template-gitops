@@ -95,7 +95,7 @@ This was a team effort and it's been a great collaboration. We're excited to see
 - Release to RHDP developers, explaining to them that this is an exciting new step in our evolution and is bringing us closer to a more robust deployment method which will reduce our cost, toil and enable us to scale out to larger audiences. 
 
 ## Next next steps
-- We will remove all non-used workloads either to a "workload-reference-library" folder or a separate repository, users will have an easy way to import/link to these workloads. Our library will grow over time. 
+- We will consider if we should remove all non-used workloads either to a "workload-reference-library" folder or a separate repository, users will have an easy way to import/link to these workloads. Our library will grow over time. 
 - Claude Skills and claud.md have been created and will be made available after further testing. 
 
 
