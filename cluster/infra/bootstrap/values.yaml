@@ -24,6 +24,31 @@ defaultStorageclass:
     path: cluster/infra/default-storageclass
     <<: *git_defaults
 
+# Values passed through verbatim to platform/bootstrap.
+# Use this to configure platform apps from the catalog without
+# infra/bootstrap needing to know about each one.
+platformValues: {}
+
+### Keycloak automation.  You probably don't need this.
+keycloakInfra:
+  enabled: false
+  git:
+    path: cluster/infra/keycloak/keycloak-infra
+    <<: *git_defaults
+
+keycloakResources:
+  enabled: false
+  git:
+    path: cluster/infra/keycloak/keycloak-resources
+    <<: *git_defaults
+
+### These workloads are in the reference workloads library.
+deschedulerOperator:
+  enabled: false
+  git:
+    path: reference_workloads_library/infra/descheduler-operator
+    <<: *git_defaults
+
 kubevirtOperator:
   enabled: false
   git:
@@ -48,38 +73,14 @@ nodeHealthCheckOperator:
     path: reference_workloads_library/infra/node-health-check-operator
     <<: *git_defaults
 
-selfNodeRemediationOperator:
-  enabled: false
-  git:
-    path: reference_workloads_library/infra/self-node-remediation-operator
-    <<: *git_defaults
-
 rhoaiOperator:
   enabled: false
   git:
     path: reference_workloads_library/infra/rhoai-operator
     <<: *git_defaults
 
-deschedulerOperator:
+selfNodeRemediationOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/descheduler-operator
-    <<: *git_defaults
-
-# Values passed through verbatim to platform/bootstrap.
-# Use this to configure platform apps from the catalog without
-# infra/bootstrap needing to know about each one.
-platformValues: {}
-
-### Keycloak automation.  You probably don't need this.
-keycloakInfra:
-  enabled: false
-  git:
-    path: cluster/infra/keycloak/keycloak-infra
-    <<: *git_defaults
-
-keycloakResources:
-  enabled: false
-  git:
-    path: cluster/infra/keycloak/keycloak-resources
+    path: reference_workloads_library/infra/self-node-remediation-operator
     <<: *git_defaults
