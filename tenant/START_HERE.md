@@ -15,6 +15,7 @@ This is **not** where cluster-wide operators or infrastructure live. That belong
 - [Example 2 — Helm Chart in Repo](#example-2--helm-chart-in-repo-example2helmbasic)
 - [Example 3 — Parameterized Helm Chart](#example-3--parameterized-helm-chart-labsexample3helmparameterized)
 - [Enabling Multiple Examples Together](#enabling-multiple-examples-together)
+- [Passing Data Back to the Deployer](#passing-data-back-to-the-deployer)
 
 ---
 
@@ -251,4 +252,22 @@ ocp4_workload_gitops_bootstrap_helm_values:
       message: "Welcome to the lab!"
       replicas: 1
       imageTag: "latest"
+```
+
+---
+
+## Passing Data Back to the Deployer
+
+To make information from your deployment available in RHDP (e.g. URLs, credentials, status), you add entries to the provision data ConfigMap at [`cluster/infra/bootstrap/templates/configmap-cluster-provisiondata.yaml`](../cluster/infra/bootstrap/templates/configmap-cluster-provisiondata.yaml).
+
+This ConfigMap is labeled `demo.redhat.com/infra: "true"`, which the deployer watches. Any key-value pairs you add under `provision_data:` will be picked up and made available in RHDP.
+
+For example, to expose a custom URL:
+
+```yaml
+data:
+  provision_data: |
+    openshift_console_url: https://console-openshift-console.{{ .Values.deployer.domain }}
+    openshift_gitops_url: https://openshift-gitops-server-openshift-gitops.{{ .Values.deployer.domain }}
+    my_app_url: https://my-app.{{ .Values.deployer.domain }}
 ```
