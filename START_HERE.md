@@ -9,6 +9,12 @@
 
 ## Where to Go Next
 
+**[cluster/START_HERE.md](cluster/START_HERE.md)** — Detailed walkthrough of the cluster layer (infra + platform), including:
+- Bootstrap chain and how infra spawns platform
+- Active workloads and how to enable them
+- Controlling both layers from the AgnosticV catalog via `platformValues`
+- Provision data — passing information back to RHDP
+
 **[tenant/START_HERE.md](tenant/START_HERE.md)** — Detailed walkthrough of the tenant layer, including:
 - File structure overview
 - How the bootstrap chart works
