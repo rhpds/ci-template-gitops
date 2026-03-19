@@ -69,7 +69,7 @@ Changes are surgical — any rename or structural change is reflected across all
 
 ---
 
-## v0.4 — Workload Documentation (2026-03-18)
+## v0.4 — Workload Documentation & Bootstrap Fixes (2026-03-18)
 
 - commit `09f079a`
     - Added shared documentation `docs/enabling-workloads.md`: explains the three-layer system (infra/platform/tenant), bootstrap chain, how to enable/disable workloads, AgnosticV catalog integration, `platformValues` passthrough (platform flags overridable from catalog), and common ArgoCD sync options. All workload READMEs link here instead of duplicating this content.
@@ -87,6 +87,11 @@ Changes are surgical — any rename or structural change is reflected across all
         - `platform/platform-example-shared-gitlab/README.md` — example platform shared resource, documents differences from `platform/gitlab`.
     - Rewrote `platform/webterminal/README.md` — replaced generic placeholder with full standardized doc (sub-chart dependencies, operator.enabled gotcha, hardcoded path mismatch).
     - Rewrote `platform/rhoai/README.md` — replaced generic placeholder with one-line companion pointing to `infra/rhoai-operator/README.md`.
+- commit `eacd234`
+    - *FIX* `application-gitlab.yaml`: added missing `git:` defaults to `platform/bootstrap/values.yaml` (`repoURL` and `targetRevision` were empty when enabled); replaced hardcoded `path: gitlab` with `{{ .Values.gitlab.git.path }}` (was pointing at repo root instead of `platform/gitlab`).
+    - *FIX* `application-webterminal.yaml`: replaced hardcoded `path: webterminal` with `{{ .Values.webterminal.git.path }}` (was pointing at repo root instead of `platform/webterminal`).
+    - *FIX* `application-rhoai.yaml`: added missing `syncPolicy` block (automated sync, syncOptions, retry); was the only Application without one, requiring manual sync from ArgoCD UI.
+    - *FIX* `application-openshift-oauth-account-operator.yaml`: changed `.Values.userOperator.*` references to `.Values.OAuthAccountOperator.*` (template referenced a key that didn't exist in values); removed `prune: true` (unique to this Application, inconsistent with all others); added `retry` block for consistency.
 
 ---
 
