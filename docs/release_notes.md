@@ -69,6 +69,27 @@ Changes are surgical — any rename or structural change is reflected across all
 
 ---
 
+## v0.4 — Workload Documentation (2026-03-18)
+
+- commit `09f079a`
+    - Added shared documentation `docs/enabling-workloads.md`: explains the three-layer system (infra/platform/tenant), bootstrap chain, how to enable/disable workloads, AgnosticV catalog integration, `platformValues` passthrough (platform flags overridable from catalog), and common ArgoCD sync options. All workload READMEs link here instead of duplicating this content.
+    - Added 12 new workload READMEs (standardized format: Overview, File Inventory, How to Enable, Variables Reference, Gotchas):
+        - `infra/descheduler-operator/README.md` — two-layer (infra+platform), KubeDescheduler CR + optional MachineConfig.
+        - `infra/kubevirt-operator/README.md` — two-layer, Manual InstallPlan approval pattern, external Ceph StorageClass, VM boot image import.
+        - `infra/mtc-operator/README.md` — two-layer, MigrationController CR + external Ceph StorageClass.
+        - `infra/mtv-operator/README.md` — two-layer, ForkliftController CR + featuregate-patch-job, cross-references KubeVirt dependency.
+        - `infra/node-health-check-operator/README.md` — three-component (NHC operator + SNR operator + platform console plugin), three enable flags.
+        - `infra/self-node-remediation-operator/README.md` — brief companion README pointing to NHC doc.
+        - `infra/rhoai-operator/README.md` — two-layer with inner gates, bootstrap overrides apiVersion to v2.
+        - `infra/default-storageclass/README.md` — infra-only, enabled by default, sync-wave -50, Sync hook pattern.
+        - `platform/gitlab/README.md` — platform-only, non-operator deployment (GitLab CE + PostgreSQL + Redis).
+        - `platform/odf/README.md` — platform-only, patches Ceph RBD CSI Driver with node remediation tolerations.
+        - `platform/platform-example-shared-gitlab/README.md` — example platform shared resource, documents differences from `platform/gitlab`.
+    - Rewrote `platform/webterminal/README.md` — replaced generic placeholder with full standardized doc (sub-chart dependencies, operator.enabled gotcha, hardcoded path mismatch).
+    - Rewrote `platform/rhoai/README.md` — replaced generic placeholder with one-line companion pointing to `infra/rhoai-operator/README.md`.
+
+---
+
 ## To Discuss
 
 - **Infra always deploys platform — catalog cannot opt out.** Currently `bootstrap-infra` unconditionally spawns `bootstrap-platform` (`platform.enabled: true` is baked into `infra/bootstrap/values.yaml`). The catalog has no way to deploy infra without platform, or platform without infra. Should the catalog be able to control each layer independently, or is "infra always brings platform" the intended contract?
