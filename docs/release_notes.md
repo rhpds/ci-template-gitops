@@ -127,6 +127,11 @@ Changes are surgical — any rename or structural change is reflected across all
     - Renamed `README.adoc` → `README.old.adoc`.
 - commit `2d47235`
     - Added GitHub-compatible table of contents to all 16 documentation files: `START_HERE.md`, `docs/enabling-workloads.md`, `docs/release_notes.md`, `tenant/labs/example3-helm-parameterized/README.md`, and all 12 workload READMEs under `cluster/`.
+- commit `a5701c1`
+    - Removed `bootstrap/` (old top-level bootstrap chart with stale paths, unused by Summit2026_Start_Here).
+    - Removed `README.old.adoc` (original upstream README).
+    - Removed `cluster/platform/README.adoc` (Keycloak SSO docs with stale paths and references to deleted `tools/`).
+    - Replaced `.gitignore` contents (was referencing unrelated repos) with standard patterns (`*.bak`, `*.tmp`, `*~`, `.DS_Store`).
 
 ---
 
