@@ -27,43 +27,43 @@ defaultStorageclass:
 kubevirtOperator:
   enabled: false
   git:
-    path: cluster/infra/kubevirt-operator
+    path: reference_workloads_library/infra/kubevirt-operator
     <<: *git_defaults
 
 mtcOperator:
   enabled: false
   git:
-    path: cluster/infra/mtc-operator
+    path: reference_workloads_library/infra/mtc-operator
     <<: *git_defaults
 
 mtvOperator:
   enabled: false
   git:
-    path: cluster/infra/mtv-operator
+    path: reference_workloads_library/infra/mtv-operator
     <<: *git_defaults
 
 nodeHealthCheckOperator:
   enabled: false
   git:
-    path: cluster/infra/node-health-check-operator
+    path: reference_workloads_library/infra/node-health-check-operator
     <<: *git_defaults
 
 selfNodeRemediationOperator:
   enabled: false
   git:
-    path: cluster/infra/self-node-remediation-operator
+    path: reference_workloads_library/infra/self-node-remediation-operator
     <<: *git_defaults
 
 rhoaiOperator:
   enabled: false
   git:
-    path: cluster/infra/rhoai-operator
+    path: reference_workloads_library/infra/rhoai-operator
     <<: *git_defaults
 
 deschedulerOperator:
   enabled: false
   git:
-    path: cluster/infra/descheduler-operator
+    path: reference_workloads_library/infra/descheduler-operator
     <<: *git_defaults
 
 # Values passed through verbatim to platform/bootstrap.
