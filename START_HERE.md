@@ -2,6 +2,11 @@
 
 #TODO: we will create the overview with everything is done
 
+## Contents
+
+- [Where to Go Next](#where-to-go-next)
+- [Quick Reference](#quick-reference)
+
 ## Where to Go Next
 
 **[tenant/START_HERE.md](tenant/START_HERE.md)** — Detailed walkthrough of the tenant layer, including:

@@ -1,5 +1,13 @@
 # KubeVirt (OpenShift Virtualization) Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs and configures the OpenShift Virtualization (KubeVirt) operator. This enables running virtual machines alongside containers on OpenShift. The workload spans **two layers**:

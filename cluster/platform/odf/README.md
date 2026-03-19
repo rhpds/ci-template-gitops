@@ -1,5 +1,13 @@
 # ODF (OpenShift Data Foundation) Patches Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Applies post-install patches to OpenShift Data Foundation's CSI driver. Specifically, it patches the Ceph RBD CSI driver to add tolerations for `node.kubernetes.io/out-of-service` and `medik8s.io/remediation` taints, which are applied by the [Node Health Check / Self Node Remediation](../../infra/node-health-check-operator/README.md) operators when fencing unhealthy nodes.

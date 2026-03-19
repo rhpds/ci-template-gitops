@@ -1,5 +1,12 @@
 # Self Node Remediation Operator Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+
 ## Overview
 
 Installs the Self Node Remediation operator, which provides automatic node fencing and restart for unhealthy nodes. This operator is the **remediation backend** for the [Node Health Check operator](../node-health-check-operator/README.md) — it should always be enabled alongside it. Both operators install into the `openshift-workload-availability` namespace.

@@ -3,6 +3,15 @@
 All changes from the original [ci-template-gitops](https://github.com/rhpds/ci-template-gitops) repo are tracked here.
 Changes are surgical — any rename or structural change is reflected across all affected files.
 
+## Contents
+
+- [v0.1 — Baseline](#v01--baseline-2026-03-18)
+- [v0.2 — Cluster/Infra/Platform layer](#v02--clusterinfraplatform-layer-2026-03-18)
+- [v0.3 — Tenant fixes](#v03--tenant-fixes-2026-03-18)
+- [v0.4 — Workload Documentation & Bootstrap Fixes](#v04--workload-documentation--bootstrap-fixes-2026-03-18)
+- [v0.5 — Directory Restructure](#v05--directory-restructure-2026-03-18)
+- [To Discuss](#to-discuss)
+
 ---
 
 ## v0.1 — Baseline (2026-03-18)

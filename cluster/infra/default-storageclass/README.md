@@ -1,5 +1,13 @@
 # Default StorageClass Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Ensures a default StorageClass exists on the cluster. Runs an idempotent Job at sync-wave `-50` (the earliest infra wave) that checks whether any StorageClass is already marked as default. If none is found, it patches the configured StorageClass to become the default. If a default already exists, it does nothing.

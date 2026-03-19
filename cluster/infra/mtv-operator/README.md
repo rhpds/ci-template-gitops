@@ -1,5 +1,13 @@
 # Migration Toolkit for Virtualization (MTV) Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs and configures the Migration Toolkit for Virtualization (MTV / Forklift) operator, which enables migrating virtual machines from VMware, Red Hat Virtualization, or OpenStack to OpenShift Virtualization. **Requires** the [KubeVirt workload](../kubevirt-operator/README.md) to be installed first.

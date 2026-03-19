@@ -1,5 +1,13 @@
 # Migration Toolkit for Containers (MTC) Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs and configures the Migration Toolkit for Containers (MTC) operator, which enables migrating containerized workloads between OpenShift clusters or between namespaces within a cluster.

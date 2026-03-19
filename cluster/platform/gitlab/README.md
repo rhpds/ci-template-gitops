@@ -1,5 +1,13 @@
 # GitLab Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Deploys a self-hosted GitLab CE instance with PostgreSQL and Redis on OpenShift. This is a **platform-only** workload — no operator is installed; GitLab runs as plain Deployments. After deployment, an init Job runs an Ansible playbook that waits for GitLab to become healthy, creates a root API token, provisions users, and optionally creates groups with imported repositories.

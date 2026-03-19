@@ -1,5 +1,13 @@
 # Node Health Check Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs and configures the Node Health Check operator, which automatically detects unhealthy nodes and triggers remediation. This workload works together with the [Self Node Remediation operator](../self-node-remediation-operator/README.md), which provides the actual remediation mechanism (node fencing and restart). Both operators install into the same namespace (`openshift-workload-availability`).

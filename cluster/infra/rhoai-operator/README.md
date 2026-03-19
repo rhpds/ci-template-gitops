@@ -1,5 +1,13 @@
 # Red Hat OpenShift AI (RHOAI) Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs and configures Red Hat OpenShift AI (formerly RHODS), which provides a platform for data scientists and ML engineers to develop, train, and deploy machine learning models on OpenShift.

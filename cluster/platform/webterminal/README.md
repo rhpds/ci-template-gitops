@@ -1,5 +1,13 @@
 # Web Terminal Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs the OpenShift Web Terminal Operator, which adds an in-console terminal for running CLI commands directly from the OpenShift web console. This is a **platform-only** workload — the operator is installed via OLM directly in the platform layer (no separate infra chart).

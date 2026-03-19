@@ -1,5 +1,13 @@
 # Descheduler Operator Workload
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Variables Reference](#variables-reference)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Installs and configures the OpenShift Kube Descheduler Operator. The descheduler periodically rebalances pod placement across cluster nodes by evicting pods that violate scheduling constraints or cause resource imbalance. Particularly useful with KubeVirt for live-migrating VMs to less-loaded nodes.

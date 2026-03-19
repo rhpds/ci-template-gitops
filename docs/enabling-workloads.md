@@ -2,6 +2,13 @@
 
 This document explains the shared pattern used by all workloads in this gitops repo. Each workload's own README covers workload-specific details and links back here for the common steps.
 
+## Contents
+
+- [Three-Layer System](#three-layer-system)
+- [How Bootstrap Applications Work](#how-bootstrap-applications-work)
+- [Enabling a Workload — Step by Step](#enabling-a-workload--step-by-step)
+- [Common Sync Options](#common-sync-options)
+
 ## Three-Layer System
 
 This repo uses three layers:

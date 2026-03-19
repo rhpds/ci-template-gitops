@@ -1,5 +1,13 @@
 # Platform Example: Shared GitLab
 
+## Contents
+
+- [Overview](#overview)
+- [File Inventory](#file-inventory)
+- [How to Enable](#how-to-enable)
+- [Key differences from `platform/gitlab`](#key-differences-from-platformgitlab)
+- [Gotchas](#gotchas)
+
 ## Overview
 
 Example of a **platform-level shared resource** — a GitLab CE instance shared across all tenants. This is a copy of the [GitLab workload](../gitlab/README.md) configured as a platform example to demonstrate how cluster-wide services are deployed.

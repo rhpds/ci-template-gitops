@@ -2,6 +2,15 @@
 
 This app demonstrates **three different methods** of passing and displaying values from the catalog through GitOps to the deployed application.
 
+## Contents
+
+- [Three Methods Demonstrated](#three-methods-demonstrated)
+- [Value Flow Chart](#value-flow-chart)
+- [Testing Different Scenarios](#testing-different-scenarios)
+- [Files in This Chart](#files-in-this-chart)
+- [Related Files](#related-files)
+- [Educational Value](#educational-value)
+
 ## Three Methods Demonstrated
 
 ### METHOD 1: Environment Variables ✅
