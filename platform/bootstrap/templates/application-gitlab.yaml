@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: {{ .Values.gitlab.git.repoURL }}
     targetRevision: {{ .Values.gitlab.git.targetRevision }}
-    path: gitlab
+    path: {{ .Values.gitlab.git.path }}
     helm:
       values: |
         operator:

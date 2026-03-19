@@ -60,6 +60,9 @@ webterminal:
 
 gitlab:
   enabled: false
+  git:
+    path: platform/gitlab
+    <<: *git_defaults
 
 # Example 1 — Platform shared resource: GitLab instance shared across all tenants
 platformExampleSharedGitlab:
@@ -74,7 +77,6 @@ OAuthAccountOperator:
   git:
     path: helm
     <<: *git_defaults
-  # HTPasswd config
   config:
     type: HTPasswd
     htpasswd:

@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: {{ .Values.webterminal.git.repoURL }}
     targetRevision: {{ .Values.webterminal.git.targetRevision }}
-    path: webterminal
+    path: {{ .Values.webterminal.git.path }}
     helm:
       values: |
         operator:
