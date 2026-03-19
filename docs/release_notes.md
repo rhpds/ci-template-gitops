@@ -111,6 +111,9 @@ Changes are surgical — any rename or structural change is reflected across all
     - Updated all 13 workload READMEs under `cluster/`: relative links to `docs/enabling-workloads.md` fixed (`../../` → `../../../`), all inline path references and file tree code blocks updated with `cluster/` prefix.
 - commit `768d307`
     - Removed obsolete `tenant/bootstrap/templates/example1-inline-resource.yaml`; this file was superseded when Example 1 was split into three files (`example1-inline-resource-pod.yaml`, `-service.yaml`, `-route.yaml`) in commit `79dee45`.
+- commit `d465450`
+    - Removed `tools/keycloak-debugger.sh` (debug utility, not part of the gitops deployment).
+    - Removed `architecture.png` (root-level image, not referenced by any document).
 
 ---
 
