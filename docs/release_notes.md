@@ -10,6 +10,7 @@ Changes are surgical — any rename or structural change is reflected across all
 - [v0.3 — Tenant fixes](#v03--tenant-fixes-2026-03-18)
 - [v0.4 — Workload Documentation & Bootstrap Fixes](#v04--workload-documentation--bootstrap-fixes-2026-03-18)
 - [v0.5 — Directory Restructure](#v05--directory-restructure-2026-03-18)
+- [v0.6 — Reference Workloads Library](#v06--reference-workloads-library-2026-03-19)
 - [To Discuss](#to-discuss)
 
 ---
@@ -132,6 +133,18 @@ Changes are surgical — any rename or structural change is reflected across all
     - Removed `README.old.adoc` (original upstream README).
     - Removed `cluster/platform/README.adoc` (Keycloak SSO docs with stale paths and references to deleted `tools/`).
     - Replaced `.gitignore` contents (was referencing unrelated repos) with standard patterns (`*.bak`, `*.tmp`, `*~`, `.DS_Store`).
+
+---
+
+## v0.6 — Reference Workloads Library (2026-03-19)
+
+- commit `7773d5c`
+    - Moved 16 unused workloads from `cluster/` to `reference_workloads_library/`, preserving `infra/` and `platform/` subdirectory structure:
+        - **Infra** (7): `descheduler-operator`, `kubevirt-operator`, `mtc-operator`, `mtv-operator`, `node-health-check-operator`, `rhoai-operator`, `self-node-remediation-operator`
+        - **Platform** (9): `descheduler`, `gitlab`, `kubevirt`, `mtc`, `mtv`, `node-health-check`, `odf`, `rhoai`, `webterminal`
+    - Updated 7 `path:` entries in `cluster/infra/bootstrap/values.yaml` from `cluster/infra/<workload>` to `reference_workloads_library/infra/<workload>`.
+    - Updated 9 `path:` entries in `cluster/platform/bootstrap/values.yaml` from `cluster/platform/<workload>` to `reference_workloads_library/platform/<workload>`.
+    - Active workloads unchanged: `defaultStorageclass` (infra), `platform` bootstrap, `platformExampleSharedGitlab` (platform), keycloak entries (infra).
 
 ---
 
