@@ -79,6 +79,10 @@ Every workload now has a README following the same format: Overview, File Invent
 
 There's a shared [docs/enabling-workloads.md](docs/enabling-workloads.md) that explains the common pattern once, and every workload README links to it. The [tenant/START_HERE.md](tenant/START_HERE.md) walks through each example with full catalog snippets you can copy-paste.
 
+## Workload reference library
+
+All workloads that aren't part of the default deployment have been moved to `reference_workloads_library/`, organized by layer (infra/platform). Their Application templates live in a `reference_workloads_library/` subfolder within each bootstrap's `templates/` directory. Everything still works — the `values.yaml` paths point to the new locations and Helm recurses into subdirectories — but the active directory tree is now clean and focused on what actually deploys.
+
 ## Built on great work
 
 None of this would exist without the effort that went into the original repo. The operator charts, the bootstrap chain, the Keycloak integration, the ArgoCD patterns — all of that was already here and working. We just tidied it up, made it consistent, and wrote it down.
