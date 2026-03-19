@@ -145,6 +145,14 @@ Changes are surgical — any rename or structural change is reflected across all
     - Updated 7 `path:` entries in `cluster/infra/bootstrap/values.yaml` from `cluster/infra/<workload>` to `reference_workloads_library/infra/<workload>`.
     - Updated 9 `path:` entries in `cluster/platform/bootstrap/values.yaml` from `cluster/platform/<workload>` to `reference_workloads_library/platform/<workload>`.
     - Active workloads unchanged: `defaultStorageclass` (infra), `platform` bootstrap, `platformExampleSharedGitlab` (platform), keycloak entries (infra).
+- commit `6c8a55a`
+    - Reordered both `cluster/infra/bootstrap/values.yaml` and `cluster/platform/bootstrap/values.yaml`: active workloads first, reference library workloads last (alphabetized), separated by a `### These workloads are in the reference workloads library.` comment. No functional change.
+- commit `0a05524`
+    - Moved 7 infra and 9 platform Application templates for unused workloads into `templates/reference_workloads_library/` subdirectories. Helm recurses into subdirectories so behavior is unchanged; keeps active templates visually separate.
+- commit `f9e9704`
+    - Added "Passing Data Back to the Deployer" section to `tenant/START_HERE.md`: documents how to use `configmap-cluster-provisiondata.yaml` with the `demo.redhat.com/infra` label to surface data in RHDP.
+- commit `0ee1dfd`
+    - Added conditional `gitlab_url` entry to `configmap-cluster-provisiondata.yaml`: when `platformValues.platformExampleSharedGitlab.enabled` is true, the GitLab route URL is included in provision data. Uses nil-safe check for when `platformValues` is `{}`.
 
 ---
 
