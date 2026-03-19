@@ -2,7 +2,7 @@
 
 The `tenant/` directory is where per-user workloads live. When a user provisions a lab through the catalog, this layer gets deployed — once per user, into namespaces scoped to that user's GUID.
 
-This is **not** where cluster-wide operators or infrastructure live. That belongs in `infra/` and `platform/`. The tenant layer assumes those are already in place.
+This is **not** where cluster-wide operators or infrastructure live. That belongs in `cluster/infra/` and `cluster/platform/`. The tenant layer assumes those are already in place.
 
 ---
 

@@ -97,8 +97,23 @@ Changes are surgical — any rename or structural change is reflected across all
 
 ---
 
+## v0.5 — Directory Restructure (2026-03-18)
+
+- commit `pending`
+    - Moved `infra/` and `platform/` directories under new `cluster/` directory (`git mv infra/ cluster/infra/`, `git mv platform/ cluster/platform/`).
+    - Updated all `path:` values in `cluster/infra/bootstrap/values.yaml` (11 entries) to include `cluster/` prefix.
+    - Fixed hardcoded `path: platform/bootstrap` in `cluster/infra/bootstrap/templates/application-bootstrap-platform.yaml` → `cluster/platform/bootstrap`.
+    - Updated all `path:` values in `cluster/platform/bootstrap/values.yaml` (10 entries) to include `cluster/` prefix.
+    - Updated AgnosticV catalog `summit-getting-started-cluster/common.yaml`: `ocp4_workload_gitops_bootstrap_repo_path: infra/bootstrap` → `cluster/infra/bootstrap`.
+    - Updated `docs/enabling-workloads.md`: all path references, code examples, and ASCII tree now reflect `cluster/` prefix.
+    - Updated `START_HERE.md`: Quick Reference table paths and links updated.
+    - Updated `tenant/START_HERE.md`: prose reference to `infra/` and `platform/` updated.
+    - Updated all 13 workload READMEs under `cluster/`: relative links to `docs/enabling-workloads.md` fixed (`../../` → `../../../`), all inline path references and file tree code blocks updated with `cluster/` prefix.
+
+---
+
 ## To Discuss
 
-- **Infra always deploys platform — catalog cannot opt out.** Currently `bootstrap-infra` unconditionally spawns `bootstrap-platform` (`platform.enabled: true` is baked into `infra/bootstrap/values.yaml`). The catalog has no way to deploy infra without platform, or platform without infra. Should the catalog be able to control each layer independently, or is "infra always brings platform" the intended contract?
-- **AppProject for platform shared resources.** Platform apps (e.g. `platform-example-shared-gitlab`) use `project: platform`, which is created by `infra/bootstrap`. This works, but is `platform` the right project for cluster-wide shared resources that tenants may consume? Should there be a separate `shared` or `cluster-services` AppProject, or is `platform` the correct scope?
+- **Infra always deploys platform — catalog cannot opt out.** Currently `bootstrap-infra` unconditionally spawns `bootstrap-platform` (`platform.enabled: true` is baked into `cluster/infra/bootstrap/values.yaml`). The catalog has no way to deploy infra without platform, or platform without infra. Should the catalog be able to control each layer independently, or is "infra always brings platform" the intended contract?
+- **AppProject for platform shared resources.** Platform apps (e.g. `platform-example-shared-gitlab`) use `project: platform`, which is created by `cluster/infra/bootstrap`. This works, but is `platform` the right project for cluster-wide shared resources that tenants may consume? Should there be a separate `shared` or `cluster-services` AppProject, or is `platform` the correct scope?
 

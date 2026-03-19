@@ -8,25 +8,25 @@ This repo uses three layers:
 
 | Layer | Path | Purpose | ArgoCD Project |
 |-------|------|---------|----------------|
-| **infra** | `infra/` | Operator installation via OLM (Subscriptions, OperatorGroups) | `infra` |
-| **platform** | `platform/` | Cluster-wide configuration that uses those operators (CRs, patches, StorageClasses) | `platform` |
+| **infra** | `cluster/infra/` | Operator installation via OLM (Subscriptions, OperatorGroups) | `infra` |
+| **platform** | `cluster/platform/` | Cluster-wide configuration that uses those operators (CRs, patches, StorageClasses) | `platform` |
 | **tenant** | `tenant/` | Per-tenant/per-user resources | `tenants` |
 
 Some workloads span two layers (e.g., descheduler, kubevirt), others are single-layer (e.g., webterminal is platform-only, gitlab is platform-only).
 
 ## How Bootstrap Applications Work
 
-The deployer creates a `bootstrap-infra` ArgoCD Application pointing at `infra/bootstrap/`. This bootstrap chart contains templates that create **child Applications** — one per workload — each gated by an `enabled` flag.
+The deployer creates a `bootstrap-infra` ArgoCD Application pointing at `cluster/infra/bootstrap/`. This bootstrap chart contains templates that create **child Applications** — one per workload — each gated by an `enabled` flag.
 
-The infra bootstrap also creates a `bootstrap-platform` Application pointing at `platform/bootstrap/`, which follows the same pattern for platform-layer workloads.
+The infra bootstrap also creates a `bootstrap-platform` Application pointing at `cluster/platform/bootstrap/`, which follows the same pattern for platform-layer workloads.
 
 ```
 deployer
-  └── bootstrap-infra (infra/bootstrap/)
+  └── bootstrap-infra (cluster/infra/bootstrap/)
         ├── descheduler-operator Application  ← gated by deschedulerOperator.enabled
         ├── kubevirt-operator Application     ← gated by kubevirtOperator.enabled
         ├── ...
-        └── bootstrap-platform Application (platform/bootstrap/)
+        └── bootstrap-platform Application (cluster/platform/bootstrap/)
               ├── descheduler Application     ← gated by descheduler.enabled
               ├── kubevirt Application        ← gated by kubevirt.enabled
               ├── webterminal Application     ← gated by webterminal.enabled
@@ -40,18 +40,18 @@ deployer
 Every workload has an entry in its layer's `bootstrap/values.yaml` that looks like this:
 
 ```yaml
-# infra/bootstrap/values.yaml (for infra-layer workloads)
+# cluster/infra/bootstrap/values.yaml (for infra-layer workloads)
 someOperator:
   enabled: false          # ← set to true
   git:
-    path: infra/some-operator
+    path: cluster/infra/some-operator
     <<: *git_defaults     # inherits repoURL and targetRevision
 
-# platform/bootstrap/values.yaml (for platform-layer workloads)
+# cluster/platform/bootstrap/values.yaml (for platform-layer workloads)
 some:
   enabled: false          # ← set to true
   git:
-    path: platform/some
+    path: cluster/platform/some
     <<: *git_defaults
 ```
 
