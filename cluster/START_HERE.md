@@ -1,163 +1,162 @@
-# Cluster Layer — Start Here
+# Cluster Layer
 
-The `cluster/` directory contains everything that runs at the cluster level — operators, cluster-wide configuration, and shared platform services. It is split into two sub-layers:
-
-- **`infra/`** — Installs operators via OLM (Subscriptions, OperatorGroups)
-- **`platform/`** — Configures those operators and deploys cluster-wide resources (CRs, patches, shared services)
-
-This is **not** where per-user workloads live. That belongs in [`tenant/`](../tenant/START_HERE.md).
+The `cluster/` directory manages everything that runs at the cluster level — operators,
+cluster-wide configuration, and shared platform services. It is split into two sub-layers
+that deploy in sequence: **infra** installs operators, **platform** configures them.
 
 ---
 
-## Table of Contents
+## TLDR
 
-- [File Structure](#file-structure)
-- [How It Works](#how-it-works)
-- [The Bootstrap Chain](#the-bootstrap-chain)
-- [Infra Layer](#infra-layer)
-- [Platform Layer](#platform-layer)
-- [Controlling Both Layers from the Catalog](#controlling-both-layers-from-the-catalog)
-- [Provision Data — Passing Information Back to RHDP](#provision-data--passing-information-back-to-rhdp)
-- [Reference Workloads Library](#reference-workloads-library)
+```yaml
+# Enable an infra-layer operator from the catalog:
+ocp4_workload_gitops_bootstrap_helm_values:
+  kubevirtOperator:
+    enabled: true
+
+# Enable a platform-layer workload from the catalog:
+ocp4_workload_gitops_bootstrap_helm_values:
+  platformValues:
+    kubevirt:
+      enabled: true
+
+# Enable both at once (required for most workloads):
+ocp4_workload_gitops_bootstrap_helm_values:
+  kubevirtOperator:
+    enabled: true
+  platformValues:
+    kubevirt:
+      enabled: true
+```
+
+All workload flags default to `false`. The `platformValues` key is a passthrough —
+anything nested under it becomes a top-level value in `cluster/platform/bootstrap/`.
 
 ---
 
-## File Structure
+## How it works
+
+```
+Ansible role (ocp4_workload_gitops_bootstrap)
+  └── bootstrap-infra  →  cluster/infra/bootstrap/
+        ├── Creates AppProjects: infra, platform, tenants
+        ├── Creates ConfigMap: infra-cluster-provisiondata (provision data back to RHDP)
+        ├── default-storageclass Application       (enabled by default)
+        └── bootstrap-platform  →  cluster/platform/bootstrap/
+              ├── platformExampleSharedGitlab       (disabled by default)
+              └── ... other platform workloads      (disabled by default)
+```
+
+The Ansible role only creates `bootstrap-infra`. ArgoCD then creates all child
+Applications by rendering the infra bootstrap Helm chart. The platform bootstrap
+is itself a child Application — infra always spawns it.
+
+---
+
+## File structure
 
 ```
 cluster/
 ├── infra/
-│   ├── bootstrap/                        # Infra bootstrap Helm chart (entry point)
-│   │   ├── Chart.yaml
-│   │   ├── values.yaml                   # All infra workload flags and git paths
+│   ├── bootstrap/
+│   │   ├── values.yaml                   # All infra flags and git paths (heavily commented)
 │   │   └── templates/
 │   │       ├── application-bootstrap-platform.yaml    # Spawns the platform layer
-│   │       ├── application-default-storageclass.yaml  # Default StorageClass workload
-│   │       ├── appproject-infra.yaml                  # ArgoCD AppProject: infra
-│   │       ├── appproject-platform.yaml               # ArgoCD AppProject: platform
-│   │       ├── appproject-tenants.yaml                # ArgoCD AppProject: tenants
-│   │       ├── configmap-cluster-provisiondata.yaml   # Data passed back to RHDP
-│   │       ├── job-cluster-provisiondata-secrets.yaml # Secret provisioning job
-│   │       ├── keycloak/                              # Keycloak automation templates
-│   │       └── reference_workloads_library/           # Templates for non-default workloads
-│   └── default-storageclass/             # Default StorageClass chart (enabled by default)
+│   │       ├── application-default-storageclass.yaml
+│   │       ├── appproject-{infra,platform,tenants}.yaml
+│   │       ├── configmap-cluster-provisiondata.yaml   # Provision data back to RHDP
+│   │       ├── job-cluster-provisiondata-secrets.yaml
+│   │       ├── keycloak/                              # Opt-in keycloak automation
+│   │       └── workloads_library/                    # Templates for library workloads
+│   └── default-storageclass/             # Sets the default StorageClass (enabled by default)
 │
 └── platform/
-    ├── bootstrap/                        # Platform bootstrap Helm chart
-    │   ├── Chart.yaml
-    │   ├── values.yaml                   # All platform workload flags and git paths
+    ├── bootstrap/
+    │   ├── values.yaml                   # All platform flags and git paths (heavily commented)
     │   └── templates/
-    │       ├── application-platform-example-shared-gitlab.yaml  # Example shared service
+    │       ├── application-platform-example-shared-gitlab.yaml
     │       ├── application-openshift-oauth-account-operator.yaml
-    │       └── reference_workloads_library/                     # Templates for non-default workloads
-    └── platform-example-shared-gitlab/   # Example: GitLab shared across all tenants
+    │       └── workloads_library/        # Templates for library workloads
+    └── platform-example-shared-gitlab/  # Example: GitLab shared across all tenants
 ```
 
 ---
 
-## How It Works
+## Infra layer
 
-The deployer runs the `ocp4_workload_gitops_bootstrap` Ansible role, which creates a single ArgoCD Application called `bootstrap-infra`. That Application points at [`cluster/infra/bootstrap/`](infra/bootstrap/) and renders it as a Helm chart.
+Installs operators via OLM (Subscription + OperatorGroup). One Application per operator.
 
-The infra bootstrap chart does three things:
+**Always-on workloads:**
 
-1. **Creates ArgoCD AppProjects** — `infra`, `platform`, and `tenants` (used by all three layers)
-2. **Creates child Applications** for each enabled infra workload (e.g., `default-storageclass`)
-3. **Spawns the platform layer** by creating the `bootstrap-platform` Application, which points at [`cluster/platform/bootstrap/`](platform/bootstrap/) and follows the same pattern for platform workloads
+| Workload | Purpose |
+|----------|---------|
+| `default-storageclass` | Sets the default StorageClass |
 
----
-
-## The Bootstrap Chain
-
-```
-deployer (Ansible)
-  └── bootstrap-infra (cluster/infra/bootstrap/)
-        ├── AppProjects: infra, platform, tenants
-        ├── default-storageclass Application       ← enabled by default
-        ├── configmap-cluster-provisiondata        ← passes data back to RHDP
-        └── bootstrap-platform (cluster/platform/bootstrap/)
-              ├── platform-example-shared-gitlab Application  ← disabled by default
-              └── openshift-oauth-account-operator Application
-```
-
-Every child Application is gated by an `enabled` flag in its layer's [`values.yaml`](infra/bootstrap/values.yaml). If the flag is `false`, the Application template renders nothing.
+Everything else is in `workloads_library/infra/` and disabled by default.
+See [`infra/bootstrap/values.yaml`](infra/bootstrap/values.yaml) for the full list and comments.
 
 ---
 
-## Infra Layer
+## Platform layer
 
-The infra layer installs operators. Each workload is a Helm chart containing an OLM Subscription and OperatorGroup.
+Configures operators and deploys cluster-wide services. Runs after infra.
 
-**Active workloads** (in `cluster/infra/`):
+**Available workloads (all disabled by default):**
 
-| Workload | Values Key | Default | Purpose |
-|----------|-----------|---------|---------|
-| [`default-storageclass`](infra/default-storageclass/) | `defaultStorageclass` | **enabled** | Sets the default StorageClass |
+| Workload | Values key | Purpose |
+|----------|-----------|---------|
+| `platform-example-shared-gitlab` | `platformExampleSharedGitlab` | GitLab CE shared across tenants |
+| `openshift-oauth-account-operator` | `OAuthAccountOperator` | HTPasswd/LDAP identity provider |
 
-The infra bootstrap also creates the three ArgoCD AppProjects (`infra`, `platform`, `tenants`) and the provision data ConfigMap.
-
-**Values:** [`infra/bootstrap/values.yaml`](infra/bootstrap/values.yaml)
-
----
-
-## Platform Layer
-
-The platform layer configures operators and deploys cluster-wide shared services. Each workload is a Helm chart containing CRs, patches, or full application deployments.
-
-**Active workloads** (in `cluster/platform/`):
-
-| Workload | Values Key | Default | Purpose |
-|----------|-----------|---------|---------|
-| [`platform-example-shared-gitlab`](platform/platform-example-shared-gitlab/) | `platformExampleSharedGitlab` | disabled | Example: GitLab CE instance shared across all tenants |
-
-**Values:** [`platform/bootstrap/values.yaml`](platform/bootstrap/values.yaml)
+Everything else is in `workloads_library/platform/` and disabled by default.
+See [`platform/bootstrap/values.yaml`](platform/bootstrap/values.yaml) for the full list.
 
 ---
 
-## Controlling Both Layers from the Catalog
+## Provision data
 
-Infra workloads are controlled directly via `ocp4_workload_gitops_bootstrap_helm_values`. Platform workloads use the `platformValues` passthrough — the infra bootstrap forwards these values to the platform bootstrap automatically.
+[`infra/bootstrap/templates/configmap-cluster-provisiondata.yaml`](infra/bootstrap/templates/configmap-cluster-provisiondata.yaml)
+creates a ConfigMap labeled `demo.redhat.com/infra: "true"`. The deployer watches for
+this label and surfaces the key-value pairs in RHDP after deployment.
 
-```yaml
-# In your AgnosticV cluster catalog common.yaml:
-ocp4_workload_gitops_bootstrap_helm_values:
-  # Infra-layer flags go here directly
-  defaultStorageclass:
-    enabled: true
-
-  # Platform-layer flags go under platformValues
-  platformValues:
-    platformExampleSharedGitlab:
-      enabled: true
-```
-
-Both layers controlled from one place. See [docs/enabling-workloads.md](../docs/enabling-workloads.md) for the full pattern.
-
----
-
-## Provision Data — Passing Information Back to RHDP
-
-The file [`infra/bootstrap/templates/configmap-cluster-provisiondata.yaml`](infra/bootstrap/templates/configmap-cluster-provisiondata.yaml) creates a ConfigMap labeled `demo.redhat.com/infra: "true"`. The deployer watches for this label and makes the key-value pairs available in RHDP.
-
-To expose a new URL or value, add it under `provision_data:`:
+Add a value:
 
 ```yaml
 data:
   provision_data: |
     openshift_console_url: https://console-openshift-console.{{ .Values.deployer.domain }}
-    my_custom_url: https://my-app.{{ .Values.deployer.domain }}
+    my_url: https://my-app.{{ .Values.deployer.domain }}
 ```
 
-Conditional entries (only included when a workload is enabled) use a nil-safe Helm `if`:
+Conditionally (only when a workload is enabled):
 
 ```yaml
     {{- if and .Values.platformValues .Values.platformValues.myWorkload .Values.platformValues.myWorkload.enabled }}
-    my_workload_url: https://my-workload.{{ .Values.deployer.domain }}
+    my_url: https://my-app.{{ .Values.deployer.domain }}
     {{- end }}
 ```
 
+The nil-safe chained `and` is required because `platformValues` can be `{}`.
+
 ---
 
-## Reference Workloads Library
+## Workloads library
 
-Workloads that are not part of the default deployment have been moved to [`reference_workloads_library/`](../reference_workloads_library/) at the repo root. Their Application templates remain functional in `templates/reference_workloads_library/` subdirectories within each bootstrap chart — Helm recurses into subdirectories, so enabling one via `values.yaml` works exactly the same way. See the [reference library README](../reference_workloads_library/) for the full list.
+Optional, maintained charts for common operators and their platform configs live in
+[`workloads_library/`](../workloads_library/), mirroring the `infra/` and `platform/`
+structure. Their ArgoCD Application templates live in `templates/workloads_library/`
+inside each bootstrap chart — Helm recurses into subdirectories, so they behave
+identically to active workloads.
+
+Most workloads span both layers. Enable both or neither:
+
+```yaml
+ocp4_workload_gitops_bootstrap_helm_values:
+  kubevirtOperator:      # infra: installs the operator
+    enabled: true
+  platformValues:
+    kubevirt:            # platform: creates the HyperConverged CR
+      enabled: true
+```
+
+See [`docs/enabling-workloads.md`](../docs/enabling-workloads.md) for the full pattern.

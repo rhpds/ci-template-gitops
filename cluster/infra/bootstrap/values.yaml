@@ -1,35 +1,85 @@
-# Default values for bootstrap.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# cluster/infra/bootstrap/values.yaml
+#
+# This is the entry-point Helm chart for the infra layer.
+# The Ansible role ocp4_workload_gitops_bootstrap creates a single ArgoCD Application
+# called "bootstrap-infra" that points at cluster/infra/bootstrap/ and renders this chart.
+#
+# What this chart does:
+#   1. Creates ArgoCD AppProjects: infra, platform, tenants
+#   2. Creates a ConfigMap (labeled demo.redhat.com/infra: "true") that passes
+#      provision data (URLs, etc.) back to RHDP after deployment
+#   3. Spawns the platform layer by creating the "bootstrap-platform" Application
+#   4. Creates child Applications for each enabled infra workload
+#
+# HOW TO CONTROL THIS FROM THE CATALOG:
+#   In your AgnosticV cluster common.yaml, set:
+#     ocp4_workload_gitops_bootstrap_helm_values:
+#       someInfraWorkload:
+#         enabled: true
+#       platformValues:            # <-- forwarded verbatim to platform bootstrap
+#         somePlatformWorkload:
+#           enabled: true
+#
+# The `deployer` block below is injected automatically by the Ansible role from
+# the live cluster. You never set these in the catalog.
 
-# defaults
+# ---------------------------------------------------------------------------
+# Git defaults — applied to every workload via YAML anchors (&git_defaults).
+# Override repoURL or targetRevision per-workload only if pointing somewhere else.
+# ---------------------------------------------------------------------------
 default_settings: &git_defaults
   repoURL: https://github.com/rhpds/ci-template-gitops.git
   targetRevision: main
 
+# ---------------------------------------------------------------------------
+# deployer — injected automatically by the ocp4_workload_gitops_bootstrap role.
+# These placeholders exist only so `helm template` works locally without a cluster.
+# Never set these in the catalog; the role always overwrites them.
+# ---------------------------------------------------------------------------
 deployer:
   domain: apps.cluster-guid.sandbox.opentlc.com
   apiUrl: https://api.cluster-guid.sandbox.opentlc.com:6443
 
-# call the platform layer, you need this.
+# ---------------------------------------------------------------------------
+# platform — spawns the platform bootstrap layer. Always keep enabled: true.
+# The platform bootstrap chart lives at cluster/platform/bootstrap/ and follows
+# the same app-of-apps pattern as this chart.
+# ---------------------------------------------------------------------------
 platform:
   enabled: true
   git:
     path: cluster/platform/bootstrap
     <<: *git_defaults
 
+# ---------------------------------------------------------------------------
+# defaultStorageclass — sets the default StorageClass on the cluster.
+# Enabled by default. Disable only if you are managing StorageClass separately.
+# ---------------------------------------------------------------------------
 defaultStorageclass:
   enabled: true
   git:
     path: cluster/infra/default-storageclass
     <<: *git_defaults
 
-# Values passed through verbatim to platform/bootstrap.
-# Use this to configure platform apps from the catalog without
-# infra/bootstrap needing to know about each one.
+# ---------------------------------------------------------------------------
+# platformValues — passed through verbatim to the platform bootstrap chart.
+# Anything you put here becomes a top-level value in cluster/platform/bootstrap/.
+# This is how catalog items control platform-layer workloads without needing
+# a separate ocp4_workload_gitops_bootstrap call.
+#
+# Example catalog usage:
+#   ocp4_workload_gitops_bootstrap_helm_values:
+#     platformValues:
+#       kubevirt:
+#         enabled: true
+# ---------------------------------------------------------------------------
 platformValues: {}
 
-### Keycloak automation.  You probably don't need this.
+# ---------------------------------------------------------------------------
+# Keycloak automation — opt-in, not needed for most labs.
+# These exist for environments that provision Keycloak via GitOps rather than
+# via the Ansible ocp4_workload_authentication_* roles.
+# ---------------------------------------------------------------------------
 keycloakInfra:
   enabled: false
   git:
@@ -42,45 +92,68 @@ keycloakResources:
     path: cluster/infra/keycloak/keycloak-resources
     <<: *git_defaults
 
-### These workloads are in the reference workloads library.
+# ===========================================================================
+# WORKLOADS LIBRARY
+# Pre-built, tested Helm charts for common operators. All disabled by default.
+# Enable from the catalog via ocp4_workload_gitops_bootstrap_helm_values.
+# These install the operator via OLM (Subscription + OperatorGroup).
+# The corresponding platform-layer workload (in platform/bootstrap/values.yaml)
+# configures the operator after it is installed — both must be enabled together.
+# See each workload's README in workloads_library/infra/<name>/ for details.
+# ===========================================================================
+
+# Descheduler Operator — evicts pods to rebalance nodes.
+# Platform pair: descheduler (in platform values)
 deschedulerOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/descheduler-operator
+    path: workloads_library/infra/descheduler-operator
     <<: *git_defaults
 
+# KubeVirt (OpenShift Virtualization) Operator — runs VMs on OpenShift.
+# Platform pair: kubevirt (in platform values)
 kubevirtOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/kubevirt-operator
+    path: workloads_library/infra/kubevirt-operator
     <<: *git_defaults
 
+# Migration Toolkit for Containers Operator.
+# Platform pair: mtc (in platform values)
 mtcOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/mtc-operator
+    path: workloads_library/infra/mtc-operator
     <<: *git_defaults
 
+# Migration Toolkit for Virtualization Operator.
+# Platform pair: mtv (in platform values)
 mtvOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/mtv-operator
+    path: workloads_library/infra/mtv-operator
     <<: *git_defaults
 
+# Node Health Check Operator.
+# Platform pair: nodeHealthCheck (in platform values)
 nodeHealthCheckOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/node-health-check-operator
+    path: workloads_library/infra/node-health-check-operator
     <<: *git_defaults
 
+# Red Hat OpenShift AI Operator.
+# Platform pair: rhoai (in platform values)
 rhoaiOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/rhoai-operator
+    path: workloads_library/infra/rhoai-operator
     <<: *git_defaults
 
+# Self Node Remediation Operator.
+# No separate platform-layer workload; the operator self-configures.
 selfNodeRemediationOperator:
   enabled: false
   git:
-    path: reference_workloads_library/infra/self-node-remediation-operator
+    path: workloads_library/infra/self-node-remediation-operator
     <<: *git_defaults

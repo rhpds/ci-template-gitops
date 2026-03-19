@@ -11,6 +11,7 @@ Changes are surgical — any rename or structural change is reflected across all
 - [v0.4 — Workload Documentation & Bootstrap Fixes](#v04--workload-documentation--bootstrap-fixes-2026-03-18)
 - [v0.5 — Directory Restructure](#v05--directory-restructure-2026-03-18)
 - [v0.6 — Reference Workloads Library](#v06--reference-workloads-library-2026-03-19)
+- [v0.7 — Rename to Workloads Library + Documentation Overhaul](#v07--rename-to-workloads-library--documentation-overhaul-2026-03-19)
 - [To Discuss](#to-discuss)
 
 ---
@@ -153,6 +154,23 @@ Changes are surgical — any rename or structural change is reflected across all
     - Added "Passing Data Back to the Deployer" section to `tenant/START_HERE.md`: documents how to use `configmap-cluster-provisiondata.yaml` with the `demo.redhat.com/infra` label to surface data in RHDP.
 - commit `0ee1dfd`
     - Added conditional `gitlab_url` entry to `configmap-cluster-provisiondata.yaml`: when `platformValues.platformExampleSharedGitlab.enabled` is true, the GitLab route URL is included in provision data. Uses nil-safe check for when `platformValues` is `{}`.
+
+---
+
+## v0.7 — Rename to Workloads Library + Documentation Overhaul (2026-03-19)
+
+- Renamed `reference_workloads_library/` → `workloads_library/` throughout:
+    - Root directory: `reference_workloads_library/` → `workloads_library/`
+    - Template subdirectories: `cluster/infra/bootstrap/templates/reference_workloads_library/` → `workloads_library/`
+    - Template subdirectories: `cluster/platform/bootstrap/templates/reference_workloads_library/` → `workloads_library/`
+    - All `git.path` entries in `cluster/infra/bootstrap/values.yaml` and `cluster/platform/bootstrap/values.yaml` updated to match.
+    - `cluster/infra/default-storageclass/` and `cluster/platform/platform-example-shared-gitlab/` paths unchanged (not part of the library).
+- Rewrote all `values.yaml` files with heavy inline comments:
+    - `cluster/infra/bootstrap/values.yaml` — documents the deployer injection, platformValues passthrough, and per-workload infra/platform pairs.
+    - `cluster/platform/bootstrap/values.yaml` — documents how values reach this chart from infra, and per-workload operator dependencies.
+    - `tenant/bootstrap/values.yaml` — documents the three example patterns, namespace requirements, and catalog usage.
+- Rewrote all `START_HERE.md` and doc files: TLDR-first structure, trimmed prose, moved detail into inline comments.
+- Added CLAUDE.md files at repo root, `cluster/`, and `tenant/` for AI-assisted development context.
 
 ---
 

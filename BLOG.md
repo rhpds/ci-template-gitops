@@ -81,7 +81,7 @@ There's a shared [docs/enabling-workloads.md](docs/enabling-workloads.md) that e
 
 ## Workload reference library
 
-All workloads that aren't part of the default deployment have been moved to `reference_workloads_library/`, organized by layer (infra/platform). Their Application templates live in a `reference_workloads_library/` subfolder within each bootstrap's `templates/` directory. Everything still works — the `values.yaml` paths point to the new locations and Helm recurses into subdirectories — but the active directory tree is now clean and focused on what actually deploys.
+All workloads that aren't part of the default deployment live in `workloads_library/`, organized by layer (`infra/` and `platform/`). Their Application templates live in a `workloads_library/` subfolder within each bootstrap's `templates/` directory. Helm recurses into subdirectories automatically, so enabling any workload is identical regardless of whether it lives in the active templates or the library: set `enabled: true` in `values.yaml` or from the catalog. The active directory tree stays focused on what actually deploys by default.
 
 ## Built on great work
 

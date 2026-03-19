@@ -1,34 +1,70 @@
-# ci-template-gitops — Start Here
+# ci-template-gitops
 
-#TODO: we will create the overview with everything is done
-
-## Contents
-
-- [Where to Go Next](#where-to-go-next)
-- [Quick Reference](#quick-reference)
-
-## Where to Go Next
-
-**[cluster/START_HERE.md](cluster/START_HERE.md)** — Detailed walkthrough of the cluster layer (infra + platform), including:
-- Bootstrap chain and how infra spawns platform
-- Active workloads and how to enable them
-- Controlling both layers from the AgnosticV catalog via `platformValues`
-- Provision data — passing information back to RHDP
-
-**[tenant/START_HERE.md](tenant/START_HERE.md)** — Detailed walkthrough of the tenant layer, including:
-- File structure overview
-- How the bootstrap chart works
-- Three example deployment patterns (inline resources, Helm chart, parameterized Helm chart)
-- AgnosticV catalog snippets for each example
+A GitOps repo template for deploying labs and demos on OpenShift via ArgoCD.
+Clone this repo, point your AgnosticV catalog at it, and everything your lab needs
+is deployed and managed declaratively.
 
 ---
 
-## Quick Reference
+## TLDR
 
-| Layer | ArgoCD App Name | Chart Path | Purpose |
-|-------|----------------|------------|---------|
-| Infra | `bootstrap-infra` | [`cluster/infra/bootstrap/`](cluster/infra/bootstrap/) | Operators (OLM subscriptions) |
-| Platform | `bootstrap-platform` | [`cluster/platform/bootstrap/`](cluster/platform/bootstrap/) | Cluster resources (post-operator) |
-| Tenant | `bootstrap-tenant-<GUID>` | [`tenant/bootstrap/`](tenant/bootstrap/) | Per-user lab workloads |
+This repo has three independently-deployable layers. Each is an ArgoCD app-of-apps
+Helm chart. The Ansible role `ocp4_workload_gitops_bootstrap` creates the entry-point
+Application; everything else is spawned by ArgoCD from there.
 
-All three examples in the tenant layer are **disabled by default**. The catalog must explicitly set `enabled: true` for each one via `ocp4_workload_gitops_bootstrap_helm_values`.
+| Layer | Entry point | What it deploys |
+|-------|-------------|-----------------|
+| **infra** | `cluster/infra/bootstrap/` | Operators via OLM |
+| **platform** | `cluster/platform/bootstrap/` | CRs, shared services (spawned by infra) |
+| **tenant** | `tenant/bootstrap/` | Per-user lab workloads |
+
+**Catalog snippet — minimum to get started:**
+
+```yaml
+# Cluster-level: deploys infra + platform
+ocp4_workload_gitops_bootstrap_repo_url: https://github.com/rhpds/ci-template-gitops.git
+ocp4_workload_gitops_bootstrap_repo_revision: main
+ocp4_workload_gitops_bootstrap_application_name: bootstrap-infra
+ocp4_workload_gitops_bootstrap_repo_path: cluster/infra/bootstrap
+
+# Tenant-level: deploys per-user workloads
+ocp4_workload_gitops_bootstrap_repo_url: https://github.com/rhpds/ci-template-gitops.git
+ocp4_workload_gitops_bootstrap_repo_revision: main
+ocp4_workload_gitops_bootstrap_application_name: "bootstrap-{{ guid }}"
+ocp4_workload_gitops_bootstrap_repo_path: tenant/bootstrap
+ocp4_workload_gitops_bootstrap_application_project: tenants
+```
+
+---
+
+## Where to go next
+
+- **[cluster/START_HERE.md](cluster/START_HERE.md)** — Infra + platform layer: operators, shared services, provision data, enabling workloads from the catalog
+- **[tenant/START_HERE.md](tenant/START_HERE.md)** — Tenant layer: three example deployment patterns with catalog snippets for each
+- **[docs/enabling-workloads.md](docs/enabling-workloads.md)** — How the `enabled` flag, git paths, and `platformValues` passthrough work
+
+---
+
+## Repo layout
+
+```
+cluster/
+├── infra/bootstrap/          # Infra entry point (operators)
+├── infra/default-storageclass/
+└── platform/bootstrap/       # Platform entry point (CRs, shared services)
+
+tenant/
+└── bootstrap/                # Tenant entry point (per-user workloads)
+
+workloads_library/
+├── infra/                    # Optional operators (all disabled by default)
+└── platform/                 # Optional platform configs (all disabled by default)
+
+docs/
+├── enabling-workloads.md
+└── release_notes.md
+```
+
+`workloads_library/` contains maintained, ready-to-use charts for common workloads
+(KubeVirt, RHOAI, ODF, etc.). They are all disabled by default and enabled via the
+catalog. See each workload's README for the exact catalog snippet.
