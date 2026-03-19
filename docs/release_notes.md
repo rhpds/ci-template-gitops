@@ -123,6 +123,10 @@ Changes are surgical — any rename or structural change is reflected across all
 - commit `d465450`
     - Removed `tools/keycloak-debugger.sh` (debug utility, not part of the gitops deployment).
     - Removed `architecture.png` (root-level image, not referenced by any document).
+- commit `0527f2c`
+    - Renamed `README.adoc` → `README.old.adoc`.
+- commit `2d47235`
+    - Added GitHub-compatible table of contents to all 16 documentation files: `START_HERE.md`, `docs/enabling-workloads.md`, `docs/release_notes.md`, `tenant/labs/example3-helm-parameterized/README.md`, and all 12 workload READMEs under `cluster/`.
 
 ---
 
