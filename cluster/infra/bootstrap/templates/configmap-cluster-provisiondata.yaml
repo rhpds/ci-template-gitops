@@ -12,3 +12,6 @@ data:
   provision_data: |
     openshift_console_url: https://console-openshift-console.{{ .Values.deployer.domain }}
     openshift_gitops_url: https://openshift-gitops-server-openshift-gitops.{{ .Values.deployer.domain }}
+    {{- if and .Values.platformValues .Values.platformValues.platformExampleSharedGitlab .Values.platformValues.platformExampleSharedGitlab.enabled }}
+    gitlab_url: https://gitlab-platform-example-shared-gitlab.{{ .Values.deployer.domain }}
+    {{- end }}
