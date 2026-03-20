@@ -1,276 +1,123 @@
-# Creating a new tenant app
+# CLAUDE.md — tenant/
 
-A tenant app is a Helm chart deployed per-tenant via ArgoCD. Adding one requires three things: the chart itself, a bootstrap Application template, and a values entry.
+This directory manages per-user lab workloads. Each provisioned user gets one
+ArgoCD Application (`bootstrap-tenant-<GUID>`) pointing at `tenant/bootstrap/`.
 
-## 1. Create the Helm chart
+## Key distinction: ArgoCD project vs. OpenShift namespace
 
-Create a directory under `/tenant/` (or a subdirectory like `/tenant/labs/`):
+- **ArgoCD project** (`project: tenants`) — cluster-wide ArgoCD concept that controls
+  which Applications can deploy to which clusters/namespaces. The `tenants` AppProject
+  is created by the infra bootstrap (cluster/infra/bootstrap/). It must exist before
+  any tenant Application can be created — infra must run before tenant.
+- **OpenShift namespace** — the actual K8s namespace where workload resources land.
+  Created by the `ocp4_workload_tenant_namespace` Ansible workload before ArgoCD runs.
+  Must already exist when ArgoCD syncs (tenant bootstrap uses `CreateNamespace=false`
+  for inline resources).
 
-```
-tenant/<app-name>/
-├── Chart.yaml
-├── values.yaml
-└── templates/
-    └── <your resources>.yaml
-```
+## Three example patterns
 
-**Chart.yaml** — follow this exact pattern:
+### Pattern 1: Inline manifests (`example1InlineResource`)
 
-```yaml
-apiVersion: v2
-name: <app-name>
-description: <Short description>
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
-```
+Resources (Deployment, Service, Route) are rendered directly by the bootstrap chart.
+No child ArgoCD Application. No sub-chart.
 
-**values.yaml** — only include values the chart actually uses. If the chart needs tenant identity or cluster info, expect these to be passed from bootstrap:
+- Template files: `bootstrap/templates/example1-inline-resource-*.yaml`
+- All three files share the same `{{ if .Values.example1InlineResource.enabled }}` gate.
+- **Namespace must be explicit on every resource.** ArgoCD's Application destination
+  namespace is `openshift-gitops` (where the bootstrap runs), not a tenant namespace.
+  Any resource without an explicit `namespace:` field lands there.
 
-```yaml
-tenant:
-  name: xyzzy
-deployer:
-  domain: apps.cluster-guid.sandbox.opentlc.com
-```
+### Pattern 2: Helm sub-chart (`example2HelmBasic`)
 
-If the chart has no configurable values (static resources only), leave values.yaml minimal or empty.
+The bootstrap chart renders one ArgoCD `Application` resource pointing at
+`tenant/example2-helm-basic/`. ArgoCD then deploys that chart as a separate Application.
 
-**templates/** — standard Kubernetes manifests with optional Helm templating. Use sync-wave annotations if ordering matters:
+- Bootstrap template: `bootstrap/templates/example2-application-helm-basic.yaml`
+- Child chart: `tenant/example2-helm-basic/`
+- Values threaded from bootstrap into child via inline `helm.values` in the Application spec.
+  The bootstrap template explicitly passes `deployer`, `tenant`, and `example2HelmBasic`.
+- The child chart has its own `values.yaml` with defaults. Catalog values override them
+  via the inline helm.values block in the Application.
 
-```yaml
-metadata:
-  annotations:
-    argocd.argoproj.io/sync-wave: "10"
-    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-```
+### Pattern 3: Parameterized Helm sub-chart (`labs.example3HelmParameterized`)
 
-## 2. Add bootstrap values entry
+Same as Pattern 2 but every meaningful parameter (message, replicas, imageTag) is
+explicitly threaded from the catalog → bootstrap chart → Application spec → child chart.
 
-In `/tenant/bootstrap/values.yaml`, add a block for the new app. Use camelCase for the key:
+- Bootstrap template: `bootstrap/templates/example3-application-helm-parameterized.yaml`
+- Child chart: `tenant/labs/example3-helm-parameterized/`
+- `namespace` has no safe default (`NAMESPACE-MUST-BE-SET-BY-CATALOG`) intentionally.
+  This causes a loud ArgoCD render failure rather than a silent wrong-namespace deploy.
 
-```yaml
-myNewApp:
-  enabled: false
-  git:
-    url: https://github.com/rhpds/ci-template-gitops.git
-    revision: main
-    path: tenant/<app-name>
-```
+## Values structure for nested keys
 
-Always default `enabled: false`.
-
-## 3. Create the Application template
-
-Create `/tenant/bootstrap/templates/application-<app-name>.yaml`:
-
-### If the chart needs tenant/deployer values:
+Example 3 is nested under `labs:` in values.yaml. In the catalog, this means:
 
 ```yaml
-{{ if .Values.myNewApp.enabled -}}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: tenant-{{ .Values.tenant.name | lower }}-<app-name>
-  namespace: openshift-gitops
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: tenants
-  source:
-    repoURL: {{ .Values.myNewApp.git.url }}
-    targetRevision: {{ .Values.myNewApp.git.revision }}
-    path: {{ .Values.myNewApp.git.path }}
-    helm:
-      values: |
-        tenant:
-        {{- .Values.tenant | toYaml | nindent 10 }}
-        deployer:
-        {{- .Values.deployer | toYaml | nindent 10 }}
-  destination:
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
+ocp4_workload_gitops_bootstrap_helm_values:
+  labs:
+    example3HelmParameterized:
       enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{- end }}
 ```
 
-### If the chart is static (no values needed, like lab modules):
+This is purely an organizational choice — `labs` groups examples that represent
+realistic lab patterns. There is no special Helm behavior for the nesting.
 
+## How provision data works in the tenant layer
+
+Tenant provision data uses a different ConfigMap label than cluster provision data:
+- Label: `demo.redhat.com/tenant-<GUID>: "true"`
+- The deployer merges all matching ConfigMaps for that tenant and adds the data to
+  `agnosticd_user_info` for that specific user.
+- ConfigMaps can live in any namespace — the label is what matters.
+
+The `tenant/example2-helm-basic/templates/configmap-provisiondata.yaml` is the
+reference implementation. It uses `tenant.name` for the GUID in the label.
+
+Do not put tenant provision data in the cluster-level `configmap-cluster-provisiondata.yaml`.
+That ConfigMap is labeled `demo.redhat.com/infra: "true"` and is read by the cluster CI,
+not the per-user CI.
+
+## Adding a new tenant workload
+
+The recommended approach follows Pattern 2 or Pattern 3:
+
+1. Create a Helm chart under `tenant/labs/<your-workload>/` with `Chart.yaml`,
+   `values.yaml`, and `templates/`
+2. Add an ArgoCD Application template to `tenant/bootstrap/templates/`
+   (use `example2-application-helm-basic.yaml` as the model)
+3. Add a values block to `tenant/bootstrap/values.yaml` with `enabled: false`,
+   a `namespace:` placeholder that fails loudly, and `git.path` pointing at your chart
+4. If the workload produces a URL or credential, add a
+   `configmap-provisiondata.yaml` to the chart with the tenant label
+
+For a minimal one-off resource (Pattern 1): add the manifest directly to
+`tenant/bootstrap/templates/` gated by `{{ if .Values.myWorkload.enabled }}`.
+Always set `namespace: {{ .Values.myWorkload.namespace }}` on every resource.
+
+## Sync policy for tenant applications
+
+The `bootstrap-tenant-<GUID>` Application (created by the Ansible role) uses:
+- `automated.prune: false`, `automated.selfHeal: false` — conservative defaults
+  for tenant Applications (the Ansible role sets these; they are not in this repo)
+
+Child Applications created by the bootstrap chart (Examples 2 and 3) use:
+- `automated.enabled: true`
+- `CreateNamespace=true` — so ArgoCD can create the namespace if it doesn't exist yet
+  (belt-and-suspenders; the namespace workload should have already created it)
+- `SkipDryRunOnMissingResource=true`
+- `RespectIgnoreDifferences=true`
+- Retry: 10 attempts, 5s × 2, max 3m
+
+## Tenant namespace naming convention
+
+Namespaces follow the pattern: `<username>-<suffix>`, where username is typically
+`user-<GUID>`. The `ocp4_workload_tenant_namespace` role creates them using:
 ```yaml
-{{ if .Values.myNewApp.enabled -}}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: <app-name>
-  namespace: openshift-gitops
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: tenants
-  source:
-    repoURL: {{ .Values.myNewApp.git.url }}
-    targetRevision: {{ .Values.myNewApp.git.revision }}
-    path: {{ .Values.myNewApp.git.path }}
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: <target-namespace>
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    managedNamespaceMetadata:
-      labels:
-        openshift.io/cluster-monitoring: "true"
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{- end }}
+ocp4_workload_tenant_namespace_username: "user-{{ guid }}"
+ocp4_workload_tenant_namespace_suffixes:
+- suffix: myapp-lab
+# → creates namespace: user-<GUID>-myapp-lab
 ```
 
-## 4. Adding a lab with multiple modules
-
-Labs group related modules under a single enable/disable gate. Each lab gets its own values file and helper template, keeping module config out of the main `values.yaml`. See the Rosetta lab for the reference implementation.
-
-### a. Add the lab gate to `values.yaml`
-
-In `/tenant/bootstrap/values.yaml`, add an entry under `labs`:
-
-```yaml
-labs:
-  rosetta:
-    enabled: false
-  myNewLab:
-    enabled: false
-```
-
-### b. Create the lab values file
-
-Create `/tenant/bootstrap/values-lab-<name>.yaml` with all module definitions:
-
-```yaml
-labMyNewLab:
-  moduleOne:
-    enabled: false
-    git:
-      url: https://github.com/rhpds/ci-template-gitops.git
-      revision: main
-      path: tenant/labs/my-new-lab/module-one
-  moduleTwo:
-    enabled: false
-    git:
-      url: https://github.com/rhpds/ci-template-gitops.git
-      revision: main
-      path: tenant/labs/my-new-lab/module-two
-```
-
-### c. Create the helper template
-
-Create `/tenant/bootstrap/templates/_lab-<name>.tpl`:
-
-```yaml
-{{- define "labMyNewLab" -}}
-{{- $defaults := (.Files.Get "values-lab-<name>.yaml" | fromYaml).labMyNewLab | default dict -}}
-{{- $overrides := .Values.labMyNewLab | default dict -}}
-{{- mergeOverwrite $defaults $overrides | toYaml -}}
-{{- end -}}
-```
-
-The helper loads defaults from the values file, then merges any inline overrides from the deployer (via `.Values.labMyNewLab`). This means `/bootstrap/` and the deployer don't need to know about the file — overrides are passed as normal Helm values.
-
-### d. Create module Application templates
-
-Create one template per module in `/tenant/bootstrap/templates/labs/<name>/`:
-
-```yaml
-{{- $lab := include "labMyNewLab" . | fromYaml -}}
-{{ if and .Values.labs.myNewLab.enabled $lab.moduleOne.enabled -}}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: my-new-lab-module-one
-  namespace: openshift-gitops
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: tenants
-  source:
-    repoURL: {{ $lab.moduleOne.git.url }}
-    targetRevision: {{ $lab.moduleOne.git.revision }}
-    path: {{ $lab.moduleOne.git.path }}
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: <target-namespace>
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{- end }}
-```
-
-Each template uses `$lab` (from the helper) for git coordinates and the module enable flag, and `.Values.labs.<name>.enabled` for the lab-level gate. Both must be true for the module to render.
-
-### e. Verification
-
-```bash
-# nothing renders (lab disabled)
-helm template tenant/bootstrap --set labMyNewLab.moduleOne.enabled=true
-
-# module renders (both gates true)
-helm template tenant/bootstrap \
-  --set labs.myNewLab.enabled=true \
-  --set labMyNewLab.moduleOne.enabled=true
-```
-
-### Existing labs
-
-| Lab | Gate | Values file | Helper |
-|-----|------|-------------|--------|
-| Rosetta | `labs.rosetta.enabled` | `values-lab-rosetta.yaml` | `_lab-rosetta.tpl` |
-
-## Required elements — do not skip
-
-- **`resources-finalizer.argocd.argoproj.io`** finalizer on the Application metadata. This ensures all managed resources are deleted when the tenant's `bootstrap-tenant-GUID` app is removed. Without it, resources are orphaned.
-- **`{{ if .Values.myNewApp.enabled -}}`** guard so the app is only deployed when explicitly enabled. For lab modules, use the two-level gate: `{{ if and .Values.labs.<name>.enabled $lab.module.enabled -}}`.
-- **`project: tenants`** — all tenant apps belong to this ArgoCD project.
-
-## Verification
-
-After creating all pieces, run:
-
-```bash
-helm template tenant/bootstrap --set myNewApp.enabled=true
-```
-
-Confirm the rendered output includes your new Application with the correct source path, values, and finalizer.
-
-## If the app creates resources via kubectl (not Helm-managed)
-
-Resources created at runtime by Jobs (via `kubectl apply`) are not tracked by ArgoCD and won't be cleaned up by the finalizer. These must be explicitly deleted by a cleanup mechanism. Follow the existing pattern for secrets and configmaps.
-
-If the Job needs RBAC, scope it with `resourceNames` to prevent cross-tenant access. Note that `resourceNames` does not work with the `create` verb (the resource doesn't exist yet), so split rules: use `create` without `resourceNames`, and `get`/`update`/`patch` with `resourceNames`.
+The `namespace:` value in the catalog's `helm_values` block must match exactly.

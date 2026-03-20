@@ -1,0 +1,30 @@
+{{ if .Values.example1InlineResource.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example1-inline-resource
+  namespace: {{ .Values.example1InlineResource.namespace }}
+  labels:
+    app: example1-inline-resource
+    app.kubernetes.io/part-of: example1-inline-resource
+    tenant: {{ .Values.tenant.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example1-inline-resource
+  template:
+    metadata:
+      labels:
+        app: example1-inline-resource
+        tenant: {{ .Values.tenant.name }}
+    spec:
+      containers:
+      - name: example1-inline-resource
+        image: registry.access.redhat.com/ubi8/httpd-24:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http
+{{- end }}

@@ -1,0 +1,35 @@
+{{ if .Values.gitlab.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitlab
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: {{ .Values.gitlab.git.repoURL }}
+    targetRevision: {{ .Values.gitlab.git.targetRevision }}
+    path: {{ .Values.gitlab.git.path }}
+    helm:
+      values: |
+        operator:
+          {{- if .Values.gitlab.startingCSV }}
+          startingCSV: {{ .Values.gitlab.startingCSV }}
+          {{- end }}
+          installPlanApproval: Automatic
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10         # Max number of retry attempts
+      backoff:
+        duration: 5s    # Initial wait time
+        factor: 2       # Multiply wait time by this factor each fail (5s, 10s, 20s...)
+        maxDuration: 3m # Cap the wait time at 3 minutes
+{{- end }}

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example3-helm-parameterized
+  labels:
+    app: example3-helm-parameterized
+    app.kubernetes.io/part-of: example3-helm-parameterized
+    tenant: {{ .Values.tenant.name }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: example3-helm-parameterized
+  template:
+    metadata:
+      labels:
+        app: example3-helm-parameterized
+        tenant: {{ .Values.tenant.name }}
+    spec:
+      containers:
+      - name: hello
+        image: {{ .Values.image.repository }}:{{ .Values.imageTag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http
+
+        # ========================================
+        # METHOD 1: Environment Variable
+        # ========================================
+        # Access: oc exec <pod> -- env | grep GREETING
+        env:
+        - name: GREETING_MESSAGE
+          value: {{ .Values.message | quote }}
+        - name: TENANT_NAME
+          value: {{ .Values.tenant.name | quote }}
+        - name: REPLICAS_COUNT
+          value: {{ .Values.replicas | quote }}
+
+        # ========================================
+        # METHOD 2: ConfigMap as File
+        # ========================================
+        # Access: oc exec <pod> -- cat /config/message.txt
+        volumeMounts:
+        - name: config-message
+          mountPath: /config
+          readOnly: true
+
+        # ========================================
+        # METHOD 3: ConfigMap as HTML Page
+        # ========================================
+        # Access: curl http://<route-url>/
+        - name: html-content
+          mountPath: /var/www/html
+          readOnly: true
+
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+
+      volumes:
+      # Volume for METHOD 2: ConfigMap as file
+      - name: config-message
+        configMap:
+          name: example3-helm-parameterized-message
+
+      # Volume for METHOD 3: HTML page
+      - name: html-content
+        configMap:
+          name: example3-helm-parameterized-html

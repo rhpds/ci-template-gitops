@@ -1,0 +1,6 @@
+apiVersion: v2
+name: example3-helm-parameterized
+description: Educational demo showing three methods of passing values (env var, ConfigMap, HTML page)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

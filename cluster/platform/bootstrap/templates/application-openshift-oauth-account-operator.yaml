@@ -1,0 +1,33 @@
+{{ if .Values.OAuthAccountOperator.enabled -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openshift-oauth-account-operator
+  namespace: openshift-gitops
+spec:
+  project: platform
+  source:
+    repoURL: {{ .Values.OAuthAccountOperator.git.repoURL }}
+    targetRevision: {{ .Values.OAuthAccountOperator.git.targetRevision }}
+    path: {{ .Values.OAuthAccountOperator.git.path }}
+    helm:
+      values: |
+        config:
+        {{- .Values.OAuthAccountOperator.config | toYaml | nindent 10 }}
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      enabled: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

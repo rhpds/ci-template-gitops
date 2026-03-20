@@ -1,43 +1,112 @@
-# Default values for tenant/bootstrap.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# tenant/bootstrap/values.yaml
+#
+# Entry-point values for the tenant bootstrap chart. This chart is deployed as
+# a unique ArgoCD Application per user: "bootstrap-tenant-<GUID>".
+#
+# The Ansible role ocp4_workload_gitops_bootstrap creates that Application and
+# injects deployer.* from the live cluster automatically. Everything else here
+# is controlled via ocp4_workload_gitops_bootstrap_helm_values in the catalog.
+#
+# THREE EXAMPLE PATTERNS (all disabled by default):
+#   Inline manifests       — raw K8s resources rendered directly by this chart; no sub-chart
+#   Basic Helm sub-chart   — bootstrap spawns a child ArgoCD Application pointing at a chart
+#                            in this repo (tenant/example2-helm-basic/)
+#   Parameterized sub-chart — same as above, but every meaningful value is driven by the catalog
+#                            (tenant/labs/example3-helm-parameterized/)
+#
+# MINIMUM CATALOG BLOCK:
+#   ocp4_workload_gitops_bootstrap_helm_values:
+#     tenant:
+#       name: "{{ guid }}"
+#       user:
+#         name: "{{ ocp4_workload_tenant_keycloak_username }}"
+#
+# See tenant/START_HERE.md for full catalog snippets for each example.
 
-# defaults
+# ---------------------------------------------------------------------------
+# Git defaults — inherited by all examples via YAML anchor.
+# Override targetRevision per-example in the catalog when developing on a branch.
+# ---------------------------------------------------------------------------
 default_settings: &git_defaults
   repoURL: https://github.com/rhpds/ci-template-gitops.git
   targetRevision: main
 
+# ---------------------------------------------------------------------------
+# deployer — injected automatically by the Ansible role from the live cluster.
+# These placeholders exist only so `helm template` works locally.
+# Never set these in the catalog; the role always overwrites them.
+# ---------------------------------------------------------------------------
 deployer:
   domain: apps.cluster-guid.example.com
   apiUrl: https://api.cluster-guid.example.com:6443
   guid: GUID
 
+# ---------------------------------------------------------------------------
+# tenant — identifies the user this deployment belongs to.
+# Set both of these from the catalog.
+#   name: the GUID string. Used in resource names, labels, and ArgoCD app names.
+#   user.name: the Keycloak/HTPasswd username (typically "user-<GUID>").
+#              Used in namespace names and provision data.
+# ---------------------------------------------------------------------------
 tenant:
   name: GUID
   user:
     name: USERNAME
 
-myapp:
+# ---------------------------------------------------------------------------
+# example2HelmBasic — basic Helm sub-chart example.
+# The bootstrap chart creates an ArgoCD Application pointing at
+# tenant/example2-helm-basic/. ArgoCD then deploys that chart independently.
+#
+# namespace: must already exist before ArgoCD syncs. Create it with
+#            ocp4_workload_tenant_namespace (suffix: example2-lab) before
+#            ocp4_workload_gitops_bootstrap runs.
+#
+# git: only override targetRevision when testing on a feature branch.
+#      repoURL and path have correct defaults here.
+# ---------------------------------------------------------------------------
+example2HelmBasic:
+  enabled: false
+  namespace: example2-USERNAME   # MUST be overridden in catalog
   git:
-    path: tenant/myapp
+    path: tenant/example2-helm-basic
     <<: *git_defaults
-  namespace: myapp-USERNAME
 
-myotherapp:
-  namespace: myotherapp-USERNAME
+# ---------------------------------------------------------------------------
+# example1InlineResource — inline manifests example.
+# Raw Deployment, Service, and Route rendered directly by this bootstrap chart.
+# No sub-chart and no child ArgoCD Application — resources are part of bootstrap-tenant-<GUID>.
+#
+# namespace: MUST be set explicitly. Without it, ArgoCD falls back to the
+#            Application's destination namespace, which is not a tenant namespace.
+#            Pre-create with ocp4_workload_tenant_namespace (suffix: example1-lab).
+# ---------------------------------------------------------------------------
+example1InlineResource:
+  enabled: false
+  namespace: example1-USERNAME   # MUST be overridden in catalog
 
+# ---------------------------------------------------------------------------
+# labs.example3HelmParameterized — parameterized Helm sub-chart example.
+# Same pattern as example2HelmBasic, but every meaningful value is passed from
+# the catalog down through the bootstrap chart into the child chart
+# (tenant/labs/example3-helm-parameterized/).
+#
+# namespace: intentionally has no safe default. "NAMESPACE-MUST-BE-SET-BY-CATALOG"
+#            causes a loud ArgoCD failure if omitted — better than a silent
+#            deploy to the wrong namespace.
+#
+# message:  shown on the app's web page. Supports Jinja2 from the catalog:
+#             message: "Hello, {{ ocp4_workload_tenant_keycloak_username }}!"
+# replicas: number of pod replicas.
+# imageTag: container image tag. Override to pin a specific version.
+# ---------------------------------------------------------------------------
 labs:
-  ocpOps:
+  example3HelmParameterized:
     enabled: false
+    namespace: NAMESPACE-MUST-BE-SET-BY-CATALOG
     git:
-      path: tenant/labs/ocpOps
+      path: tenant/labs/example3-helm-parameterized
       <<: *git_defaults
-  helloWorld:
-    enabled: false
-    git:
-      path: tenant/labs/helloWorld
-      <<: *git_defaults
-    namespace: default
-    message: "🎓 Hello from DEFAULT values - edit catalog to override me!"
+    message: "Hello from DEFAULT values - edit catalog to override me!"
     replicas: 1
     imageTag: "latest"

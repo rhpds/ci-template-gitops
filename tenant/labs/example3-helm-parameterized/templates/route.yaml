@@ -1,0 +1,19 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: example3-helm-parameterized
+  labels:
+    app: example3-helm-parameterized
+    tenant: {{ .Values.tenant.name }}
+spec:
+  host: example3-helm-parameterized-{{ .Values.tenant.name }}.{{ .Values.deployer.domain }}
+  to:
+    kind: Service
+    name: example3-helm-parameterized
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    app: gitlab
+  name: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab
+  template:
+    metadata:
+      labels:
+        app: gitlab
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: gitlab-cm
+        - secretRef:
+            name: gitlab-secret
+        image: {{ $.Values.gitlab.image }}
+        imagePullPolicy: Always
+        name: gitlab
+        ports:
+        - containerPort: 22
+          name: ssh
+          protocol: TCP
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "2"
+            memory: 4Gi
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /home/git/data
+          name: gitlab-persistent-storage
+        - mountPath: /scripts
+          name: create-root-pat-vol
+      volumes:
+      - name: gitlab-persistent-storage
+        persistentVolumeClaim:
+          claimName: gitlab-persistent-storage
+      - name: create-root-pat-vol
+        configMap:
+          name: cm-create-root-pat
+          defaultMode: 0777
+      serviceAccount: gitlab
+      serviceAccountName: gitlab

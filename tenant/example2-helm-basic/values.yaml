@@ -1,0 +1,9 @@
+# Default values for example2-helm-basic
+
+tenant:
+  name: GUID
+  user:
+    name: USERNAME
+
+example2HelmBasic:
+  namespace: example2-USERNAME

@@ -1,0 +1,52 @@
+{{ if .Values.labs.example3HelmParameterized.enabled -}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example3-helm-parameterized-{{ .Values.tenant.user.name | lower }}
+  namespace: openshift-gitops
+  labels:
+    app: example3-helm-parameterized
+    tenant: {{ .Values.tenant.name | lower }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tenants
+  source:
+    repoURL: {{ .Values.labs.example3HelmParameterized.git.repoURL }}
+    targetRevision: {{ .Values.labs.example3HelmParameterized.git.targetRevision }}
+    path: {{ .Values.labs.example3HelmParameterized.git.path }}
+    helm:
+      values: |
+        # Pass tenant context
+        tenant:
+          name: {{ .Values.tenant.name }}
+
+        # Pass deployer context
+        deployer:
+          domain: {{ .Values.deployer.domain }}
+          apiUrl: {{ .Values.deployer.apiUrl }}
+
+        # Pass example3-helm-parameterized specific values
+        message: {{ .Values.labs.example3HelmParameterized.message | quote }}
+        replicas: {{ .Values.labs.example3HelmParameterized.replicas }}
+        imageTag: {{ .Values.labs.example3HelmParameterized.imageTag | quote }}
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.labs.example3HelmParameterized.namespace }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false  # Namespace already created by tenant_namespace workload
+      - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+{{- end }}

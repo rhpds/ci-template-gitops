@@ -1,0 +1,149 @@
+# cluster/platform/bootstrap/values.yaml
+#
+# This is the platform layer Helm chart. It is NOT deployed directly by the Ansible role.
+# Instead, the infra bootstrap (cluster/infra/bootstrap/) spawns it by creating
+# the "bootstrap-platform" ArgoCD Application.
+#
+# What this chart does:
+#   Creates child ArgoCD Applications for each enabled platform workload.
+#   Platform workloads configure operators (CRs, patches) and deploy cluster-wide
+#   shared services. Operators must be installed first via the infra layer.
+#
+# HOW VALUES REACH THIS CHART:
+#   The infra bootstrap forwards two things to this chart:
+#     1. deployer.*  — domain, apiUrl, guid (from the live cluster)
+#     2. Everything under platformValues: in infra/bootstrap/values.yaml
+#
+#   So in the catalog, you control this chart via:
+#     ocp4_workload_gitops_bootstrap_helm_values:
+#       platformValues:          # <-- these become top-level values here
+#         kubevirt:
+#           enabled: true
+#
+#   You never call ocp4_workload_gitops_bootstrap twice to reach this chart.
+
+# ---------------------------------------------------------------------------
+# Git defaults — applied to every workload via YAML anchors (&git_defaults).
+# ---------------------------------------------------------------------------
+default_settings: &git_defaults
+  repoURL: https://github.com/rhpds/ci-template-gitops.git
+  targetRevision: main
+
+# ---------------------------------------------------------------------------
+# deployer — forwarded here verbatim from the infra bootstrap.
+# Used by templates that need the cluster domain (e.g., provision data ConfigMaps,
+# Route hostnames). The placeholder below is overwritten at runtime.
+# ---------------------------------------------------------------------------
+deployer:
+  domain: cluster.example.com
+
+# ---------------------------------------------------------------------------
+# platformExampleSharedGitlab — example of a cluster-wide shared service.
+# A GitLab CE instance shared across all tenant users. Disabled by default.
+# See cluster/platform/platform-example-shared-gitlab/ for the chart.
+# When enabled, the gitlab_url is automatically added to provision data.
+# ---------------------------------------------------------------------------
+platformExampleSharedGitlab:
+  enabled: false
+  git:
+    path: cluster/platform/platform-example-shared-gitlab
+    <<: *git_defaults
+
+# ---------------------------------------------------------------------------
+# OAuthAccountOperator — manages HTPasswd/LDAP identity providers on the cluster.
+# Disabled by default. The `config` block below is passed to the operator chart.
+# ---------------------------------------------------------------------------
+OAuthAccountOperator:
+  enabled: false
+  authn: htpasswd
+  git:
+    path: helm
+    <<: *git_defaults
+  config:
+    type: HTPasswd
+    htpasswd:
+      htpasswdSecret:
+        name: htpasswd
+
+# ===========================================================================
+# WORKLOADS LIBRARY
+# Pre-built, tested Helm charts for common platform configurations.
+# All disabled by default. Enable via platformValues in the catalog.
+# These configure operators — the corresponding infra-layer operator must be
+# installed first. See workloads_library/platform/<name>/ for details.
+#
+# IMPORTANT: workloads that span both layers (e.g. kubevirt, descheduler)
+# require enabling BOTH the infra operator AND this platform workload.
+# ===========================================================================
+
+# Descheduler — creates the Descheduler CR and MachineConfig after the operator installs.
+# Infra pair: deschedulerOperator (in infra values)
+descheduler:
+  enabled: false
+  git:
+    path: workloads_library/platform/descheduler
+    <<: *git_defaults
+
+# GitLab — deploys a full GitLab CE instance (Deployment + PostgreSQL + Redis).
+# This is a standalone platform service, no infra-layer operator required.
+gitlab:
+  enabled: false
+  git:
+    path: workloads_library/platform/gitlab
+    <<: *git_defaults
+
+# KubeVirt (OpenShift Virtualization) — creates HyperConverged CR and StorageClass.
+# Infra pair: kubevirtOperator (in infra values)
+kubevirt:
+  enabled: false
+  git:
+    path: workloads_library/platform/kubevirt
+    <<: *git_defaults
+
+# Migration Toolkit for Containers — creates the MigrationController CR.
+# Infra pair: mtcOperator (in infra values)
+mtc:
+  enabled: false
+  git:
+    path: workloads_library/platform/mtc
+    <<: *git_defaults
+
+# Migration Toolkit for Virtualization — creates the ForkliftController CR.
+# Infra pair: mtvOperator (in infra values)
+mtv:
+  enabled: false
+  git:
+    path: workloads_library/platform/mtv
+    <<: *git_defaults
+
+# Node Health Check — patches the console plugin and creates remediation CRs.
+# Infra pair: nodeHealthCheckOperator (in infra values)
+nodeHealthCheck:
+  enabled: false
+  git:
+    path: workloads_library/platform/node-health-check
+    <<: *git_defaults
+
+# OpenShift Data Foundation — configures ODF StorageSystem and CSI tolerations.
+# Requires ODF operator to be installed at the cluster level (outside this repo).
+odf:
+  enabled: false
+  git:
+    path: workloads_library/platform/odf
+    <<: *git_defaults
+
+# Red Hat OpenShift AI — creates DSCInitialization and DataScienceCluster CRs.
+# Infra pair: rhoaiOperator (in infra values)
+rhoai:
+  enabled: false
+  git:
+    path: workloads_library/platform/rhoai
+    <<: *git_defaults
+
+# Web Terminal — deploys the Web Terminal operator and creates the WebTerminal CR.
+# No infra-layer pair; the operator installs via this chart directly.
+webterminal:
+  enabled: false
+  git:
+    path: workloads_library/platform/webterminal
+    <<: *git_defaults

@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example2-html
+  labels:
+    app: example2-helm-basic
+    tenant: {{ .Values.tenant.name }}
+data:
+  # METHOD 3: HTML page served by httpd
+  # Access: Open browser to the Route URL or curl http://<route-url>/
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MyApp Hello World - Value Demonstration</title>
+        <style>
+            body {
+                font-family: 'Red Hat Display', 'Red Hat Text', 'Overpass', sans-serif;
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                background: linear-gradient(135deg, #151515 0%, #0f0f0f 100%);
+                color: white;
+            }
+            .container {
+                background: rgba(238, 0, 0, 0.08);
+                border: 1px solid rgba(238, 0, 0, 0.3);
+                border-radius: 8px;
+                padding: 30px;
+                box-shadow: 0 8px 32px rgba(238, 0, 0, 0.2);
+            }
+            h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+                color: #EE0000;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .message-box {
+                background: rgba(238, 0, 0, 0.15);
+                border-left: 5px solid #EE0000;
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 5px;
+                font-size: 1.3em;
+            }
+            .info {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(238, 0, 0, 0.2);
+                padding: 15px;
+                border-radius: 8px;
+                margin: 15px 0;
+            }
+            .info-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .info-row:last-child {
+                border-bottom: none;
+            }
+            .label {
+                font-weight: bold;
+                color: #EE0000;
+            }
+            .method-tag {
+                background: #EE0000;
+                color: white;
+                padding: 5px 15px;
+                border-radius: 3px;
+                font-weight: bold;
+                display: inline-block;
+                margin: 5px 0;
+            }
+            .footer {
+                margin-top: 30px;
+                text-align: center;
+                font-size: 0.9em;
+                opacity: 0.7;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Hello World Value Demo</h1>
+
+            <div class="method-tag">METHOD 3: HTML Page via ConfigMap</div>
+
+            <div class="message-box">
+                No special message in this app.
+            </div>
+
+            <div class="info">
+                <h2>Configuration Details</h2>
+                <div class="info-row">
+                    <span class="label">Tenant:</span>
+                    <span>{{ .Values.tenant.name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Replicas:</span>
+                    <span>uno</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Image Tag:</span>
+                    <span>testInProd</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Cluster Domain:</span>
+                    <span>{{ .Values.deployer.domain }}</span>
+                </div>
+            </div>
+
+        </div>
+    </body>
+    </html>
